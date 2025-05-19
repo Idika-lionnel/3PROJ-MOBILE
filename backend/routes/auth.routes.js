@@ -5,24 +5,22 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const User = require('../models/User');
 
+// Utilitaire : générer un token JWT
+const generateToken = (user) => {
+  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+};
+
 // 📥 Inscription
 router.post('/register', async (req, res) => {
-  console.log("📥 Route /register appelée");
-  console.log("📦 Données reçues dans req.body :", req.body);
-
   const { email, prenom, nom, password } = req.body;
 
   if (!email || !prenom || !nom || !password) {
-    console.log("❌ Champs manquants :", { email, prenom, nom, password });
     return res.status(400).json({ error: 'Champs requis manquants' });
   }
 
-
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email déjà utilisé' });
-    }
+    if (existingUser) return res.status(400).json({ error: 'Email déjà utilisé' });
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({
@@ -60,7 +58,7 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ error: 'Identifiants invalides' });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = generateToken(user);
 
     res.json({
       token,
@@ -78,27 +76,53 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 🌐 Google OAuth2
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// 🌐 Google OAuth2 (web et mobile)
+router.get('/google', (req, res, next) => {
+  const redirect_uri = req.query.redirect_uri;
+  const state = Buffer.from(JSON.stringify({ redirect_uri })).toString('base64');
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    state,
+  })(req, res, next);
+});
 
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:3000/login' }),
+  passport.authenticate('google', { session: false, failureRedirect: '/' }),
   (req, res) => {
     const user = req.user;
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.redirect(`http://localhost:3000/login?token=${token}`);
+    const token = generateToken(user);
+
+    const state = req.query.state
+      ? JSON.parse(Buffer.from(req.query.state, 'base64').toString())
+      : {};
+    const redirect_uri = state.redirect_uri || 'http://localhost:3000/login';
+
+    res.redirect(`${redirect_uri}?token=${token}`);
   }
 );
 
-// 🐙 GitHub OAuth2
-router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+// 🐙 GitHub OAuth2 (web et mobile)
+router.get('/github', (req, res, next) => {
+  const redirect_uri = req.query.redirect_uri;
+  const state = Buffer.from(JSON.stringify({ redirect_uri })).toString('base64');
+  passport.authenticate('github', {
+    scope: ['user:email'],
+    state,
+  })(req, res, next);
+});
 
 router.get('/github/callback',
-  passport.authenticate('github', { failureRedirect: 'http://localhost:3000/login' }),
+  passport.authenticate('github', { session: false, failureRedirect: '/' }),
   (req, res) => {
     const user = req.user;
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.redirect(`http://localhost:3000/login?token=${token}`);
+    const token = generateToken(user);
+
+    const state = req.query.state
+      ? JSON.parse(Buffer.from(req.query.state, 'base64').toString())
+      : {};
+    const redirect_uri = state.redirect_uri || 'http://localhost:3000/login';
+
+    res.redirect(`${redirect_uri}?token=${token}`);
   }
 );
 
@@ -122,4 +146,43 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// 📱 Connexion mobile via Google
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+router.get('/google/mobile', async (req, res) => {
+  const accessToken = req.query.access_token;
+  if (!accessToken) {
+    return res.status(400).json({ error: 'Access token manquant' });
+  }
+
+  try {
+    // Vérifie le token d’accès Google
+    const ticket = await googleClient.getTokenInfo(accessToken);
+    const email = ticket.email;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email non trouvé dans le token' });
+    }
+
+    // Recherche ou création de l’utilisateur
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        email,
+        prenom: 'Google',
+        nom: 'User',
+        password: '', // Pas nécessaire pour OAuth
+        role: 'membre',
+      });
+    }
+
+    const token = generateToken(user);
+    res.json({ token });
+
+  } catch (err) {
+    console.error('Erreur Google mobile login :', err);
+    res.status(500).json({ error: 'Erreur authentification Google' });
+  }
+});
 module.exports = router;
