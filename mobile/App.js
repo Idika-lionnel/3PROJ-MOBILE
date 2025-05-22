@@ -2,9 +2,16 @@ import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext'; // ✅ AJOUT
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import ChatHomeScreen from './screens/ChatHomeScreen';
+import DirectChatScreen from './screens/DirectChatScreen';
+import WorkspacesScreen from './screens/WorkspacesScreen';
+import CreateWorkspaceScreen from './screens/CreateWorkspaceScreen';
+import WorkspaceDetailScreen from './screens/WorkspaceDetailScreen';
 import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createNativeStackNavigator();
@@ -24,7 +31,15 @@ function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName={token ? 'Dashboard' : 'Login'}>
         {token ? (
+          <>
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="ChatHome" component={ChatHomeScreen} />
+          <Stack.Screen name="DirectChat" component={DirectChatScreen} />
+          <Stack.Screen name="Workspaces" component={WorkspacesScreen} />
+          <Stack.Screen name="CreateWorkspace" component={CreateWorkspaceScreen} />
+          <Stack.Screen name="WorkspaceDetail" component={WorkspaceDetailScreen} /> 
+          </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -38,8 +53,10 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

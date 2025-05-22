@@ -1,19 +1,24 @@
-import React, { useContext } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+// DashboardScreen.js
+import React, { useContext, useEffect, useState } from 'react';
+import DashboardMobile from './DashboardMobile';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 
-export default function DashboardScreen() {
-  const { logout } = useContext(AuthContext);
+const API_URL = 'http://192.168.0.42:5050'; // ⚠️ adapte à ton IP
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bienvenue sur SUPCHAT</Text>
-      <Button title="Se déconnecter" onPress={logout} />
-    </View>
-  );
-}
+const DashboardScreen = () => {
+  const { token } = useContext(AuthContext);
+  const [user, setUser] = useState(null);
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 26, marginBottom: 20 },
-});
+  useEffect(() => {
+    axios.get(`${API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(res => setUser(res.data.user));
+  }, [token]);
+
+  if (!user) return null;
+
+  return <DashboardMobile user={user} />;
+};
+
+export default DashboardScreen;

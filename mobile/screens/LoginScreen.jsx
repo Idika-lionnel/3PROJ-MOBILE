@@ -3,6 +3,7 @@ import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert, Image } fro
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext'; // 👈 Ajout
 import axios from 'axios';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -11,10 +12,10 @@ const API_URL = 'http://192.168.0.42:5050'; // adapte à ton IP
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext);
+  const { dark } = useContext(ThemeContext); // 👈 Utilise le thème
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Google Auth (client Android)
   const [googleRequest, googleResponse, promptGoogleLogin] = Google.useAuthRequest({
     clientId: '897794245642-48h4khm619m0bd26h0sjgcuj5alctfos.apps.googleusercontent.com',
   });
@@ -36,6 +37,8 @@ const LoginScreen = ({ navigation }) => {
       .catch(err => Alert.alert('Erreur', err.response?.data?.error || 'Connexion échouée'));
   };
 
+  const styles = createStyles(dark); // 👈 styles dynamiques
+
   return (
     <View style={styles.container}>
       <View style={styles.box}>
@@ -43,7 +46,7 @@ const LoginScreen = ({ navigation }) => {
 
         <TextInput
           placeholder="Email"
-          placeholderTextColor="#999"
+          placeholderTextColor={dark ? '#aaa' : '#999'}
           style={styles.input}
           value={email}
           onChangeText={setEmail}
@@ -51,7 +54,7 @@ const LoginScreen = ({ navigation }) => {
 
         <TextInput
           placeholder="Mot de passe"
-          placeholderTextColor="#999"
+          placeholderTextColor={dark ? '#aaa' : '#999'}
           secureTextEntry
           style={styles.input}
           value={password}
@@ -62,7 +65,6 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>Se connecter</Text>
         </TouchableOpacity>
 
-        {/* Bouton Google */}
         <TouchableOpacity
           style={styles.googleButton}
           onPress={() => promptGoogleLogin()}
@@ -86,15 +88,15 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (dark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2563eb',
+    backgroundColor: dark ? '#000' : '#2563eb',
     justifyContent: 'center',
     alignItems: 'center',
   },
   box: {
-    backgroundColor: '#fff',
+    backgroundColor: dark ? '#1e293b' : '#fff',
     padding: 25,
     borderRadius: 12,
     width: '85%',
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 20,
     textAlign: 'center',
-    color: '#111',
+    color: dark ? '#fff' : '#111',
   },
   input: {
     borderWidth: 1,
@@ -117,6 +119,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 15,
+    color: dark ? '#fff' : '#000',
+    backgroundColor: dark ? '#334155' : '#fff',
   },
   button: {
     backgroundColor: '#3b82f6',
@@ -149,7 +153,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     textAlign: 'center',
-    color: '#333',
+    color: dark ? '#ccc' : '#333',
     marginTop: 5,
   },
   link: {

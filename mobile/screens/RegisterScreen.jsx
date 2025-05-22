@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import api from '../services/api';
+import { ThemeContext } from '../context/ThemeContext'; // 👈 Import du contexte thème
 
 export default function RegisterScreen({ navigation }) {
+  const { dark } = useContext(ThemeContext); // 👈 Accès au thème
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const styles = createStyles(dark); // 👈 Génération dynamique des styles
 
   const handleRegister = async () => {
     if (!prenom || !nom || !email || !password) {
@@ -36,33 +40,30 @@ export default function RegisterScreen({ navigation }) {
 
         <TextInput
           placeholder="Prénom"
-          placeholderTextColor="#999"
+          placeholderTextColor={dark ? '#aaa' : '#999'}
           style={styles.input}
           value={prenom}
           onChangeText={setPrenom}
         />
-
         <TextInput
           placeholder="Nom"
-          placeholderTextColor="#999"
+          placeholderTextColor={dark ? '#aaa' : '#999'}
           style={styles.input}
           value={nom}
           onChangeText={setNom}
         />
-
         <TextInput
           placeholder="Email"
-          placeholderTextColor="#999"
+          placeholderTextColor={dark ? '#aaa' : '#999'}
           style={styles.input}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
-
         <TextInput
           placeholder="Mot de passe"
-          placeholderTextColor="#999"
+          placeholderTextColor={dark ? '#aaa' : '#999'}
           secureTextEntry
           style={styles.input}
           value={password}
@@ -84,15 +85,15 @@ export default function RegisterScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (dark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2563eb',
+    backgroundColor: dark ? '#000' : '#2563eb',
     justifyContent: 'center',
     alignItems: 'center',
   },
   box: {
-    backgroundColor: '#fff',
+    backgroundColor: dark ? '#1e293b' : '#fff',
     padding: 25,
     borderRadius: 12,
     width: '85%',
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 20,
     textAlign: 'center',
-    color: '#111',
+    color: dark ? '#fff' : '#111',
   },
   input: {
     borderWidth: 1,
@@ -115,6 +116,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 15,
+    color: dark ? '#fff' : '#000',
+    backgroundColor: dark ? '#334155' : '#fff',
   },
   button: {
     backgroundColor: '#3b82f6',
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     textAlign: 'center',
-    color: '#333',
+    color: dark ? '#ccc' : '#333',
     marginTop: 5,
   },
   link: {

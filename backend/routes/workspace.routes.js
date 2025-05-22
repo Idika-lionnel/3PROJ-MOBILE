@@ -31,7 +31,7 @@ router.post('/', requireAuth, async (req, res) => {
       description,
       isPrivate,
       createdBy: req.userId,
-      members: [req.userId]
+      members: [req.userId],
     });
     res.status(201).json(workspace);
   } catch (err) {
@@ -39,13 +39,29 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// ✅ Récupérer TOUS les workspaces où l'utilisateur est membre
+// ✅ Récupérer tous les workspaces de l'utilisateur
 router.get('/', requireAuth, async (req, res) => {
   try {
     const workspaces = await Workspace.find({ members: req.userId });
     res.status(200).json(workspaces);
   } catch (err) {
     res.status(500).json({ error: 'Erreur récupération des workspaces' });
+  }
+});
+
+// ✅ Récupérer un workspace spécifique (détail)
+router.get('/:id', requireAuth, async (req, res) => {
+  try {
+    const workspace = await Workspace.findById(req.params.id)
+      .populate('createdBy', '_id prenom nom email')
+      .populate('members', '_id prenom nom email');
+
+    if (!workspace) return res.status(404).json({ error: 'Workspace introuvable' });
+
+    res.json(workspace);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur récupération workspace' });
   }
 });
 
@@ -69,7 +85,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const deleted = await Workspace.findOneAndDelete({
       _id: req.params.id,
-      createdBy: req.userId
+      createdBy: req.userId,
     });
     if (!deleted) return res.status(404).json({ error: 'Non trouvé ou non autorisé' });
     res.json({ message: 'Workspace supprimé' });
@@ -78,7 +94,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// ✅ Ajouter un membre par email (corrigé)
+// ✅ Ajouter un membre par email
 router.post('/:id/members-by-email', requireAuth, async (req, res) => {
   const { email } = req.body;
 
@@ -114,30 +130,6 @@ router.get('/:id/members', requireAuth, async (req, res) => {
     res.json(workspace.members);
   } catch (err) {
     res.status(500).json({ error: 'Erreur récupération membres' });
-  }
-});
-// 🔍 Obtenir un workspace précis avec toutes ses infos (y compris createdBy)
-router.get('/:id', requireAuth, async (req, res) => {
-  try {
-    const workspace = await Workspace.findById(req.params.id);
-    if (!workspace) return res.status(404).json({ error: 'Workspace introuvable' });
-    res.json(workspace);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur récupération workspace' });
-  }
-});
-router.get('/:id', requireAuth, async (req, res) => {
-  try {
-    const workspace = await Workspace.findById(req.params.id)
-      .populate('createdBy', '_id prenom nom email')
-      .populate('members', '_id prenom nom email');
-
-    if (!workspace) return res.status(404).json({ error: 'Workspace introuvable' });
-
-    res.json(workspace);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur récupération workspace' });
   }
 });
 

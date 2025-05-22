@@ -1,11 +1,15 @@
 // context/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
+const API_URL = 'http://192.168.0.42:5050'; // adapte à ton IP
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,9 +18,15 @@ export const AuthProvider = ({ children }) => {
         const storedToken = await AsyncStorage.getItem('userToken');
         if (storedToken) {
           setToken(storedToken);
+          // On récupère aussi les infos utilisateur
+          const res = await axios.get(`${API_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          setUser(res.data.user);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement du token :', error);
+        console.error('Erreur AuthContext loadToken :', error.message);
+        setToken(null);
       } finally {
         setLoading(false);
       }
@@ -29,8 +39,12 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem('userToken', newToken);
       setToken(newToken);
+      const res = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+      setUser(res.data.user);
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du token :', error);
+      console.error('Erreur AuthContext login :', error.message);
     }
   };
 
@@ -38,13 +52,14 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.removeItem('userToken');
       setToken(null);
+      setUser(null);
     } catch (error) {
-      console.error('Erreur lors de la suppression du token :', error);
+      console.error('Erreur AuthContext logout :', error.message);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ token, login, logout, loading }}>
+    <AuthContext.Provider value={{ token, user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
