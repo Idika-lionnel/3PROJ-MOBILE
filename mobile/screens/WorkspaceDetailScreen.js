@@ -58,7 +58,6 @@ const WorkspaceDetailScreen = () => {
     }
   }, [workspaceId, token]);
 
-  // ✅ Callback pour ajouter le nouveau canal directement
   const handleChannelCreated = (newChannel) => {
     setChannels((prev) => [...prev, newChannel]);
   };
@@ -229,9 +228,13 @@ const WorkspaceDetailScreen = () => {
         <Text style={styles.info}>Aucun canal pour le moment.</Text>
       ) : (
         channels.map((ch) => (
-          <View key={ch._id} style={styles.channelBox}>
+          <TouchableOpacity
+            key={ch._id}
+            style={styles.channelBox}
+            onPress={() => navigation.navigate('ChannelChat', { channelId: ch._id, workspaceId })}
+          >
             <Text style={styles.channelText}># {ch.name}</Text>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </View>

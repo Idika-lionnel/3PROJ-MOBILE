@@ -41,7 +41,7 @@ router.post('/', requireAuth, async (req, res) => {
       description,
       workspace: workspaceId,
       createdBy: req.user._id,
-      members: [req.user._id],
+      members: [req.user._id], // 👈 Le créateur est membre automatiquement
     });
 
     res.status(201).json(channel);
@@ -51,7 +51,7 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// ✅ Récupérer tous les canaux d’un workspace
+// ✅ Récupérer les canaux du workspace où l'utilisateur est membre
 router.get('/', requireAuth, async (req, res) => {
   const { workspaceId } = req.params;
 
@@ -60,7 +60,11 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   try {
-    const channels = await Channel.find({ workspace: workspaceId });
+    const channels = await Channel.find({
+      workspace: workspaceId,
+      members: req.user._id, // ✅ filtre : l'utilisateur doit être membre
+    });
+
     res.status(200).json(channels);
   } catch (err) {
     console.error('❌ ERREUR RÉCUPÉRATION CANAUX :', err);

@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedToken = await AsyncStorage.getItem('userToken');
         if (storedToken) {
-          console.log('🔐 TOKEN STOCKÉ :', storedToken); // LOG DU TOKEN STOCKÉ
           setToken(storedToken);
+          // On récupère aussi les infos utilisateur
           const res = await axios.get(`${API_URL}/api/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem('userToken', newToken);
       setToken(newToken);
-      console.log('🔐 TOKEN AUTHENTIFIÉ :', newToken); // LOG DU TOKEN À LA CONNEXION
       const res = await axios.get(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${newToken}` },
       });
