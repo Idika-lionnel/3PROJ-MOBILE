@@ -1,0 +1,102 @@
+import React, { useState, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext';
+
+const API_URL = 'http://192.168.0.42:5050';
+
+const CreateChannelScreen = () => {
+  const { token } = useContext(AuthContext);
+  const { dark } = useContext(ThemeContext);
+  const { params } = useRoute();
+  const navigation = useNavigation();
+
+  // ✅ Fiabilité de l'ID récupéré
+  const workspaceId = params?.workspaceId || params?.id;
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const styles = createStyles(dark);
+
+  const handleCreateChannel = async () => {
+    if (!name.trim()) return Alert.alert('Erreur', 'Le nom du canal est requis');
+
+    console.log('workspaceId utilisé pour créer le canal :', workspaceId);
+
+    try {
+      await axios.post(
+        `${API_URL}/api/workspaces/${workspaceId}/channels`,
+        { name, description },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert('Erreur', "Impossible de créer le canal.");
+      console.error('Erreur axios :', err?.response?.data || err.message);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Créer un canal</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Nom du canal"
+        placeholderTextColor={dark ? '#aaa' : '#555'}
+        value={name}
+        onChangeText={setName}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Description (optionnelle)"
+        placeholderTextColor={dark ? '#aaa' : '#555'}
+        value={description}
+        onChangeText={setDescription}
+      />
+
+      <TouchableOpacity onPress={handleCreateChannel} style={styles.button}>
+        <Text style={styles.buttonText}>Créer</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const createStyles = (dark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: dark ? '#000' : '#f9f9f9',
+      padding: 20,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: dark ? '#fff' : '#111',
+      marginBottom: 20,
+    },
+    input: {
+      backgroundColor: dark ? '#1e293b' : '#fff',
+      color: dark ? '#fff' : '#000',
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      marginBottom: 12,
+    },
+    button: {
+      backgroundColor: '#2563eb',
+      padding: 12,
+      borderRadius: 6,
+      alignItems: 'center',
+    },
+    buttonText: {
+      color: '#fff',
+      fontWeight: '600',
+    },
+  });
+
+export default CreateChannelScreen;

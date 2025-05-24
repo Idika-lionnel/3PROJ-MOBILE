@@ -1,6 +1,5 @@
-// WorkspaceDetailScreen.js
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -16,6 +15,7 @@ const WorkspaceDetailScreen = () => {
   const styles = createStyles(dark);
 
   const [workspace, setWorkspace] = useState(null);
+  const [channels, setChannels] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({ name: '', description: '', isPrivate: false });
   const [newMemberEmail, setNewMemberEmail] = useState('');
@@ -40,7 +40,22 @@ const WorkspaceDetailScreen = () => {
         setError('Erreur chargement workspace');
       }
     };
-    if (workspaceId && token) fetchData();
+
+    const fetchChannels = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/workspaces/${workspaceId}/channels`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setChannels(res.data);
+      } catch (err) {
+        console.error('Erreur chargement canaux', err);
+      }
+    };
+
+    if (workspaceId && token) {
+      fetchData();
+      fetchChannels();
+    }
   }, [workspaceId]);
 
   const handleSaveEdit = async () => {
@@ -183,6 +198,34 @@ const WorkspaceDetailScreen = () => {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* 🔗 Bouton Créer un canal */}
+      {isOwner && (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('CreateChannel', { workspaceId })}
+          style={{
+            marginTop: 30,
+            backgroundColor: '#2563eb',
+            padding: 12,
+            borderRadius: 8,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>➕ Créer un canal</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* 📢 Affichage des canaux */}
+      <Text style={styles.sectionTitle}>📢 Canaux</Text>
+      {channels.length === 0 ? (
+        <Text style={styles.info}>Aucun canal pour le moment.</Text>
+      ) : (
+        channels.map((ch) => (
+          <View key={ch._id} style={styles.channelBox}>
+            <Text style={styles.channelText}># {ch.name}</Text>
+          </View>
+        ))
+      )}
     </View>
   );
 };
@@ -216,6 +259,16 @@ const createStyles = (dark) =>
     addMemberBox: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
     addBtn: { backgroundColor: '#22c55e', padding: 10, borderRadius: 6, marginLeft: 8 },
     addBtnText: { color: '#fff', fontWeight: 'bold' },
+    channelBox: {
+      backgroundColor: dark ? '#1e3a8a' : '#3b82f6',
+      padding: 12,
+      borderRadius: 6,
+      marginBottom: 8,
+    },
+    channelText: {
+      color: '#fff',
+      fontWeight: '600',
+    },
   });
 
 export default WorkspaceDetailScreen;

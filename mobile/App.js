@@ -12,6 +12,7 @@ import DirectChatScreen from './screens/DirectChatScreen';
 import WorkspacesScreen from './screens/WorkspacesScreen';
 import CreateWorkspaceScreen from './screens/CreateWorkspaceScreen';
 import WorkspaceDetailScreen from './screens/WorkspaceDetailScreen';
+import CreateChannelScreen from './screens/CreateChannelScreen';
 import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createNativeStackNavigator();
@@ -39,6 +40,7 @@ function AppNavigator() {
           <Stack.Screen name="Workspaces" component={WorkspacesScreen} />
           <Stack.Screen name="CreateWorkspace" component={CreateWorkspaceScreen} />
           <Stack.Screen name="WorkspaceDetail" component={WorkspaceDetailScreen} /> 
+          <Stack.Screen name="CreateChannel" component={CreateChannelScreen} />
           </>
         ) : (
           <>

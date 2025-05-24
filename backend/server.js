@@ -12,7 +12,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const conversationRoutes = require('./routes/conversation.routes');
 const messageRoutes = require('./routes/message.routes');
-const workspaceRoutes = require('./routes/workspace.routes'); // ✅ Ajouté
+const workspaceRoutes = require('./routes/workspace.routes'); // ✅ contient les routes channels
 
 // 🚀 App init
 const app = express();
@@ -37,7 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
-app.use('/api/workspaces', workspaceRoutes); // ✅ Ajouté ici
+app.use('/api/workspaces', workspaceRoutes); // ✅ Ne pas redéclarer les routes channels ici
 
 // 🛢️ Connexion MongoDB
 mongoose
