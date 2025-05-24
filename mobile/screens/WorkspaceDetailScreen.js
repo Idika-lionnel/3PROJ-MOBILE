@@ -56,7 +56,12 @@ const WorkspaceDetailScreen = () => {
       fetchData();
       fetchChannels();
     }
-  }, [workspaceId]);
+  }, [workspaceId, token]);
+
+  // ✅ Callback pour ajouter le nouveau canal directement
+  const handleChannelCreated = (newChannel) => {
+    setChannels((prev) => [...prev, newChannel]);
+  };
 
   const handleSaveEdit = async () => {
     try {
@@ -199,10 +204,14 @@ const WorkspaceDetailScreen = () => {
         </View>
       )}
 
-      {/* 🔗 Bouton Créer un canal */}
       {isOwner && (
         <TouchableOpacity
-          onPress={() => navigation.navigate('CreateChannel', { workspaceId })}
+          onPress={() =>
+            navigation.navigate('CreateChannel', {
+              workspaceId,
+              onChannelCreated: handleChannelCreated,
+            })
+          }
           style={{
             marginTop: 30,
             backgroundColor: '#2563eb',
@@ -215,7 +224,6 @@ const WorkspaceDetailScreen = () => {
         </TouchableOpacity>
       )}
 
-      {/* 📢 Affichage des canaux */}
       <Text style={styles.sectionTitle}>📢 Canaux</Text>
       {channels.length === 0 ? (
         <Text style={styles.info}>Aucun canal pour le moment.</Text>

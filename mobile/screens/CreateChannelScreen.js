@@ -10,11 +10,12 @@ const API_URL = 'http://192.168.0.42:5050';
 const CreateChannelScreen = () => {
   const { token } = useContext(AuthContext);
   const { dark } = useContext(ThemeContext);
-  const { params } = useRoute();
   const navigation = useNavigation();
+  const { params } = useRoute();
 
-  // ✅ Fiabilité de l'ID récupéré
   const workspaceId = params?.workspaceId || params?.id;
+  const onChannelCreated = params?.onChannelCreated;
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const styles = createStyles(dark);
@@ -22,14 +23,17 @@ const CreateChannelScreen = () => {
   const handleCreateChannel = async () => {
     if (!name.trim()) return Alert.alert('Erreur', 'Le nom du canal est requis');
 
-    console.log('workspaceId utilisé pour créer le canal :', workspaceId);
-
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_URL}/api/workspaces/${workspaceId}/channels`,
         { name, description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      if (onChannelCreated) {
+        onChannelCreated(res.data); // ✅ mise à jour immédiate côté parent
+      }
+
       navigation.goBack();
     } catch (err) {
       Alert.alert('Erreur', "Impossible de créer le canal.");
