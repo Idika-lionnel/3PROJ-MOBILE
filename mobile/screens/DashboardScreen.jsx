@@ -1,4 +1,3 @@
-// DashboardScreen.js
 import React, { useContext, useEffect, useState } from 'react';
 import DashboardMobile from './DashboardMobile';
 import { AuthContext } from '../context/AuthContext';

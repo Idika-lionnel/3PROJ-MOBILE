@@ -1,4 +1,3 @@
-// mobile/screens/CreateWorkspaceScreen.js
 import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, useColorScheme } from 'react-native';
 import axios from 'axios';
