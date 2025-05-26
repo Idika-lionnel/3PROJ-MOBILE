@@ -5,6 +5,7 @@ const passport = require('passport');
 const session = require('express-session');
 const http = require('http');
 const { Server } = require('socket.io');
+const os = require('os'); // ✅ Ajouté
 require('dotenv').config();
 
 // 📦 Import des routes
@@ -37,14 +38,11 @@ app.use('/api/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
-app.use('/api/workspaces', workspaceRoutes); // ✅ Ne pas redéclarer les routes channels ici
+app.use('/api/workspaces', workspaceRoutes);
 
 // 🛢️ Connexion MongoDB
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connecté');
   })
@@ -54,6 +52,8 @@ mongoose
 
 // 🔌 Serveur HTTP + Socket.io
 const PORT = process.env.PORT || 5050;
+const IP = '0.0.0.0'; // ✅ écoute toutes les interfaces réseau
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -81,7 +81,21 @@ io.on('connection', (socket) => {
   });
 });
 
-// 🚀 Démarrage du serveur
-server.listen(PORT, () => {
-  console.log(`🌐 Serveur démarré sur http://localhost:${PORT}`);
+// 🧠 Fonction pour récupérer l'IP locale
+function getLocalIPAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name in interfaces) {
+    for (const net of interfaces[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+const localIP = getLocalIPAddress();
+
+server.listen(PORT, IP, () => {
+  console.log(`🌐 Serveur accessible sur http://${localIP}:${PORT}`);
 });

@@ -3,7 +3,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.0.42:5050'; // adapte à ton IP
+import { API_URL } from '../config'; 
 
 export const AuthContext = createContext();
 

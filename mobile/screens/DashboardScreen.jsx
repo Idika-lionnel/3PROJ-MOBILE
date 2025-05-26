@@ -3,7 +3,7 @@ import DashboardMobile from './DashboardMobile';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.0.42:5050'; // ⚠️ adapte à ton IP
+import { API_URL } from '../config'; 
 
 const DashboardScreen = () => {
   const { token } = useContext(AuthContext);

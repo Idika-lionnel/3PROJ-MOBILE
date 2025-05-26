@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.0.42:5050';
+import { API_URL } from '../config'; 
 
 const WorkspacesScreen = () => {
   const { token } = useContext(AuthContext);

@@ -8,7 +8,7 @@ import axios from 'axios';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const API_URL = 'http://192.168.0.42:5050'; // adapte à ton IP
+import { API_URL } from '../config'; 
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext);

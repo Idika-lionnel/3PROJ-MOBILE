@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { ThemeContext } from '../context/ThemeContext';
 
-const API_URL = 'http://192.168.0.42:5050';
+import { API_URL } from '../config'; 
 
 const ChatHomeScreen = () => {
   const navigation = useNavigation();
