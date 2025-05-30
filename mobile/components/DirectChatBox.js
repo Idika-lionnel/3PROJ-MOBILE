@@ -1,4 +1,5 @@
 // mobile/components/DirectChatBox.js
+import { format } from 'date-fns';
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
@@ -20,7 +21,7 @@ import axios from 'axios';
 import * as DocumentPicker from 'expo-document-picker';
 import { AuthContext } from '../context/AuthContext';
 
-const API_URL = 'http://192.168.30.125:5050'; // adapte si nécessaire
+const API_URL = 'http://192.168.30.125:5050';
 
 const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const { user } = useContext(AuthContext);
@@ -110,46 +111,51 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
 
   const renderItem = ({ item }) => {
     const isMe = item.senderId === currentUserId;
-    const style = isMe ? styles.bubbleMe : styles.bubbleYou;
     const fullUrl = item.attachmentUrl?.replace('http://localhost:5050', API_URL);
+    const timestamp = item.timestamp ? format(new Date(item.timestamp), 'HH:mm') : '';
+    const timestampStyle = isMe ? styles.timestampRight : styles.timestampLeft;
 
-    if (item.attachmentUrl) {
-      const isImg = /\.(jpg|jpeg|png|gif)$/i.test(item.attachmentUrl);
-
-      if (isImg) {
-        return (
-          <Pressable
+    // ✅ Images en dehors des bulles
+    if (item.attachmentUrl && /\.(jpg|jpeg|png|gif)$/i.test(item.attachmentUrl)) {
+      return (
+        <View style={styles.messageBlock}>
+          <TouchableOpacity
             onPress={() => {
               setSelectedImage(fullUrl);
               setIsModalVisible(true);
             }}
-            style={{
-              alignSelf: isMe ? 'flex-end' : 'flex-start',
-              marginVertical: 6,
-            }}
+            style={{ alignSelf: isMe ? 'flex-end' : 'flex-start' }}
           >
-            <Image
-              source={{ uri: fullUrl }}
-              style={{ width: 200, height: 200, borderRadius: 12 }}
-            />
-          </Pressable>
-        );
-      } else {
-        return (
-          <View style={style}>
-            <TouchableOpacity onPress={() => Linking.openURL(fullUrl)}>
-              <Text style={{ color: '#fff' }}>
-                📎 {item.attachmentUrl.split('/').pop()}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        );
-      }
+            <Image source={{ uri: fullUrl }} style={styles.image} />
+          </TouchableOpacity>
+          <Text style={timestampStyle}>{timestamp}</Text>
+        </View>
+      );
     }
 
+    // ✅ Fichiers dans une bulle
+    if (item.attachmentUrl) {
+      const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
+      return (
+        <View style={styles.messageBlock}>
+          <View style={isMeStyle}>
+            <TouchableOpacity onPress={() => Linking.openURL(fullUrl)}>
+              <Text style={{ color: '#fff' }}>📎 {item.attachmentUrl.split('/').pop()}</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={timestampStyle}>{timestamp}</Text>
+        </View>
+      );
+    }
+
+    // ✅ Message texte dans une bulle
+    const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
     return (
-      <View style={style}>
-        <Text style={styles.text}>{item.message}</Text>
+      <View style={styles.messageBlock}>
+        <View style={isMeStyle}>
+          <Text style={styles.text}>{item.message}</Text>
+        </View>
+        <Text style={timestampStyle}>{timestamp}</Text>
       </View>
     );
   };
@@ -187,17 +193,9 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
           </View>
         </View>
 
-        {/* ✅ MODAL IMAGE FULLSCREEN */}
         <Modal visible={isModalVisible} transparent={true}>
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setIsModalVisible(false)}
-          >
-            <Image
-              source={{ uri: selectedImage }}
-              style={styles.fullImage}
-              resizeMode="contain"
-            />
+          <Pressable style={styles.modalOverlay} onPress={() => setIsModalVisible(false)}>
+            <Image source={{ uri: selectedImage }} style={styles.fullImage} resizeMode="contain" />
           </Pressable>
         </Modal>
       </KeyboardAvoidingView>
@@ -226,12 +224,15 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   icon: { fontSize: 20 },
+  messageBlock: {
+    marginVertical: 6,
+    paddingHorizontal: 10,
+  },
   bubbleMe: {
     alignSelf: 'flex-end',
     backgroundColor: '#2563eb',
     borderRadius: 12,
     padding: 10,
-    marginVertical: 4,
     maxWidth: '70%',
   },
   bubbleYou: {
@@ -239,10 +240,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     borderRadius: 12,
     padding: 10,
-    marginVertical: 4,
     maxWidth: '70%',
   },
   text: { color: '#fff' },
+  image: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+  },
+  timestampLeft: {
+    fontSize: 10,
+    color: '#888',
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    marginLeft: 10,
+  },
+  timestampRight: {
+    fontSize: 10,
+    color: '#888',
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginRight: 10,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.9)',
