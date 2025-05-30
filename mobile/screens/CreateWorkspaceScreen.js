@@ -4,7 +4,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 
-const API_URL = 'http://192.168.0.42:5050'; // adapte ton IP si besoin
+const API_URL = 'http://192.168.30.125:5050'; // adapte ton IP si besoin
 
 export default function CreateWorkspaceScreen() {
   const [name, setName] = useState('');

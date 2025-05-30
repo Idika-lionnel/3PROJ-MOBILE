@@ -10,12 +10,12 @@ const ConversationListMobile = ({ onSelect, selectedId }) => {
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const userRes = await axios.get('http://192.168.0.42:5050/api/auth/me', {
+      const userRes = await axios.get('http://192.168.30.125:5050/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const user = userRes.data.user;
 
-      const res = await axios.get(`http://192.168.0.42:5050/api/conversations/${user._id}`, {
+      const res = await axios.get(`http://:5050/api/conversations/${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

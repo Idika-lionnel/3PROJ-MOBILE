@@ -5,7 +5,7 @@ const path = require('path');
 const Message = require('../models/DirectMessage');
 const fs = require('fs');
 
-// Upload config
+// 📁 Config multer (stockage fichiers)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = './uploads';
@@ -19,25 +19,40 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Upload fichier
+// 📤 Route POST pour envoyer un fichier
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier reçu' });
+    }
+
     const { senderId, receiverId, type } = req.body;
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ error: 'Champs senderId ou receiverId manquants' });
+    }
+
     const newMsg = await Message.create({
       senderId,
       receiverId,
       type: type || 'file',
-      attachmentUrl: `http://localhost:5050/uploads/${req.file.filename}`,
+      attachmentUrl: `http://${req.hostname}:5050/uploads/${req.file.filename}`,
       timestamp: new Date().toISOString()
     });
-    res.json(newMsg);
+
+    // ✅ Émettre le message en temps réel via socket.io
+    const io = req.app.get('io');
+    io.to(receiverId).emit('new_direct_message', newMsg);
+    io.to(senderId).emit('new_direct_message', newMsg); // pour affichage immédiat chez l'envoyeur aussi
+
+    // ✅ Répondre au client mobile avec le message complet
+    res.status(200).json(newMsg);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Erreur upload fichier :', err);
     res.status(500).json({ error: 'Erreur enregistrement fichier' });
   }
 });
 
-// Liste des messages entre 2 utilisateurs
+// 🔁 Récupération des messages entre deux utilisateurs
 router.get('/:receiverId', async (req, res) => {
   const { currentUserId } = req.query;
   const { receiverId } = req.params;
