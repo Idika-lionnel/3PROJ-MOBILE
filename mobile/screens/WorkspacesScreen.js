@@ -4,8 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import axios from 'axios';
+import { API_URL } from '../config';
 
-const API_URL = 'http://192.168.30.125:5050';
+//const API_URL = 'http://192.168.30.125:5050';
+
 
 const WorkspacesScreen = () => {
   const { token } = useContext(AuthContext);

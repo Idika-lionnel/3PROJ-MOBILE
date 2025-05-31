@@ -3,8 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, useColorSch
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-
-const API_URL = 'http://192.168.30.125:5050'; // adapte ton IP si besoin
+import { API_URL } from '../config';
+//const API_URL = 'http://192.168.30.125:5050'; // adapte ton IP si besoin
 
 export default function CreateWorkspaceScreen() {
   const [name, setName] = useState('');

@@ -21,8 +21,8 @@ import socket from '../socket';
 import axios from 'axios';
 import * as DocumentPicker from 'expo-document-picker';
 import { AuthContext } from '../context/AuthContext';
-
-const API_URL = 'http://192.168.30.125:5050';
+import { API_URL } from '../config';
+//const API_URL = 'http://192.168.30.125:5050';
 
 const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const { user } = useContext(AuthContext);
@@ -139,7 +139,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
         <View style={styles.messageBlock}>
           <View style={isMeStyle}>
             <TouchableOpacity onPress={() => Linking.openURL(fullUrl)}>
-              <Text style={{ color: '#fff' }}>📎 {item.attachmentUrl.split('/').pop()}</Text>
+              <Text style={{ color: isMe ? '#fff' : '#224262' }}>📎 {item.attachmentUrl.split('/').pop()}</Text>
             </TouchableOpacity>
           </View>
           <Text style={timestampStyle}>{timestamp}</Text>

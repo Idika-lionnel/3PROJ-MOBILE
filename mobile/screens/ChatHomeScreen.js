@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { ThemeContext } from '../context/ThemeContext';
-
-const API_URL = 'http://192.168.30.125:5050';
+import { API_URL } from '../config';
+//const API_URL = 'http://192.168.30.125:5050';
 
 const ChatHomeScreen = () => {
   const navigation = useNavigation();
