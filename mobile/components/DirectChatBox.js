@@ -16,6 +16,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import socket from '../socket';
 import axios from 'axios';
 import * as DocumentPicker from 'expo-document-picker';
@@ -115,7 +116,6 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     const timestamp = item.timestamp ? format(new Date(item.timestamp), 'HH:mm') : '';
     const timestampStyle = isMe ? styles.timestampRight : styles.timestampLeft;
 
-    // ✅ Images en dehors des bulles
     if (item.attachmentUrl && /\.(jpg|jpeg|png|gif)$/i.test(item.attachmentUrl)) {
       return (
         <View style={styles.messageBlock}>
@@ -133,7 +133,6 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       );
     }
 
-    // ✅ Fichiers dans une bulle
     if (item.attachmentUrl) {
       const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
       return (
@@ -148,12 +147,11 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       );
     }
 
-    // ✅ Message texte dans une bulle
     const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
     return (
       <View style={styles.messageBlock}>
         <View style={isMeStyle}>
-          <Text style={styles.text}>{item.message}</Text>
+            <Text style={isMe ? styles.text : styles.textYou}>{item.message}</Text>
         </View>
         <Text style={timestampStyle}>{timestamp}</Text>
       </View>
@@ -176,19 +174,21 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
             onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
             style={{ flex: 1 }}
           />
-          <View style={styles.inputBar}>
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              style={styles.input}
-              placeholder="Message..."
-              placeholderTextColor="#888"
-            />
+          <View style={styles.footerBar}>
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={message}
+                onChangeText={setMessage}
+                style={styles.inputWebStyle}
+                placeholder="Message ....."
+                placeholderTextColor="#999"
+              />
+            </View>
             <TouchableOpacity onPress={sendFile}>
-              <Text style={styles.icon}>📎</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={sendMessage}>
-              <Text style={styles.icon}>📤</Text>
+                            <Ionicons name="add" size={24} color="#999" />
+                          </TouchableOpacity>
+            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+              <Ionicons name="arrow-up" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -205,23 +205,32 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  inputBar: {
+  footerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    paddingBottom: Platform.OS === 'android' ? 12 : 24,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
     padding: 10,
+    backgroundColor: '#fff',
+    gap: 10,
+  },
+  inputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#f1f1f1',
     borderRadius: 20,
-    marginRight: 8,
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+  },
+  inputWebStyle: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 6,
     color: '#000',
+  },
+  sendButton: {
+    backgroundColor: '#1877F2',
+    borderRadius: 14,
+    padding: 10,
   },
   icon: { fontSize: 20 },
   messageBlock: {
@@ -234,10 +243,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
     maxWidth: '70%',
+
   },
   bubbleYou: {
     alignSelf: 'flex-start',
-    backgroundColor: '#ddd',
+    backgroundColor: '#e3f1ff',
     borderRadius: 12,
     padding: 10,
     maxWidth: '70%',
@@ -247,6 +257,9 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 12,
+  },
+  textYou: {
+    color: '#224262',
   },
   timestampLeft: {
     fontSize: 10,
