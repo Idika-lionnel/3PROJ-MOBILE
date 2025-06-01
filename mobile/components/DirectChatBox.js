@@ -1,4 +1,3 @@
-// mobile/components/DirectChatBox.js
 import { format } from 'date-fns';
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
@@ -22,7 +21,6 @@ import axios from 'axios';
 import * as DocumentPicker from 'expo-document-picker';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
-//const API_URL = 'http://192.168.30.125:5050';
 
 const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const { user } = useContext(AuthContext);
@@ -48,16 +46,13 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
 
   useEffect(() => {
     if (!currentUserId) return;
-
     socket.emit('join', currentUserId);
 
     const handler = (msg) => {
       const isForThisChat =
         msg.senderId === receiver._id || msg.receiverId === receiver._id;
 
-      const alreadyExists = log.some(
-        (m) => m._id && msg._id && m._id === msg._id
-      );
+      const alreadyExists = log.some((m) => m._id && msg._id && m._id === msg._id);
 
       if (isForThisChat && !alreadyExists) {
         setLog((prev) => [...prev, msg]);
@@ -80,7 +75,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     };
 
     socket.emit('direct_message', msg);
-    setLog((prev) => [...prev, msg]);
+
     setMessage('');
   };
 
@@ -139,7 +134,9 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
         <View style={styles.messageBlock}>
           <View style={isMeStyle}>
             <TouchableOpacity onPress={() => Linking.openURL(fullUrl)}>
-              <Text style={{ color: isMe ? '#fff' : '#224262' }}>📎 {item.attachmentUrl.split('/').pop()}</Text>
+              <Text style={{ color: isMe ? '#fff' : '#224262' }}>
+                📎 {item.attachmentUrl.split('/').pop()}
+              </Text>
             </TouchableOpacity>
           </View>
           <Text style={timestampStyle}>{timestamp}</Text>
@@ -151,7 +148,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     return (
       <View style={styles.messageBlock}>
         <View style={isMeStyle}>
-            <Text style={isMe ? styles.text : styles.textYou}>{item.message}</Text>
+          <Text style={isMe ? styles.text : styles.textYou}>{item.message}</Text>
         </View>
         <Text style={timestampStyle}>{timestamp}</Text>
       </View>
@@ -185,8 +182,8 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
               />
             </View>
             <TouchableOpacity onPress={sendFile}>
-                            <Ionicons name="add" size={24} color="#999" />
-                          </TouchableOpacity>
+              <Ionicons name="add" size={24} color="#999" />
+            </TouchableOpacity>
             <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
               <Ionicons name="arrow-up" size={24} color="#fff" />
             </TouchableOpacity>
@@ -243,23 +240,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
     maxWidth: '70%',
-
   },
   bubbleYou: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e3f1ff',
+    backgroundColor: '#e3f1ff', // ancienne couleur
     borderRadius: 12,
     padding: 10,
     maxWidth: '70%',
   },
   text: { color: '#fff' },
+  textYou: {
+    color: '#224262',
+  },
   image: {
     width: 200,
     height: 200,
     borderRadius: 12,
-  },
-  textYou: {
-    color: '#224262',
   },
   timestampLeft: {
     fontSize: 10,

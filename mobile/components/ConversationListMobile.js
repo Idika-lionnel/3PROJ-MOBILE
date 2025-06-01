@@ -1,42 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  TextInput,
+  StyleSheet
+} from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 
 const ConversationListMobile = ({ onSelect, selectedId }) => {
-  const { token } = React.useContext(AuthContext);
-  const [contacts, setContacts] = useState([]);
+  const { token } = useContext(AuthContext);
+  const [conversations, setConversations] = useState([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const userRes = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const user = userRes.data.user;
+      try {
+        const userRes = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const user = userRes.data.user;
 
-      const res = await axios.get(`${API_URL}/api/conversations/${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+        const res = await axios.get(`${API_URL}/api/conversations/${user._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      const enriched = res.data.map(conv => {
-        const other = conv.participants.find(p => p._id !== user._id);
-        return {
-          ...other,
-          lastMessage: conv.lastMessage,
-          lastHour: conv.lastHour
-        };
-      });
-
-      setContacts(enriched);
+        // ✅ Utiliser directement la structure renvoyée par le backend
+        setConversations(res.data);
+      } catch (err) {
+        console.error('Erreur chargement conversations :', err);
+      }
     };
 
     fetchConversations();
   }, []);
 
-  const filtered = contacts.filter(c => {
-    const full = `${c.prenom} ${c.nom}`.toLowerCase();
+  const filtered = conversations.filter(c => {
+    const full = `${c.otherUser?.prenom || ''} ${c.otherUser?.nom || ''}`.toLowerCase();
     return full.includes(search.toLowerCase());
   });
 
@@ -57,9 +60,16 @@ const ConversationListMobile = ({ onSelect, selectedId }) => {
               styles.contact,
               item._id === selectedId ? styles.selected : null
             ]}
-            onPress={() => onSelect(item)}
+            onPress={() => onSelect(item.otherUser)}
           >
-            <Text style={styles.name}>{item.prenom} {item.nom}</Text>
+            <View style={styles.row}>
+              <Text style={styles.name}>
+                {item.otherUser?.prenom} {item.otherUser?.nom}
+              </Text>
+              {item.lastHour && (
+                <Text style={styles.hour}>{item.lastHour}</Text>
+              )}
+            </View>
             <Text style={styles.message}>
               {item.lastMessage ? item.lastMessage : 'Nouveau message'}
             </Text>
@@ -79,20 +89,31 @@ const styles = StyleSheet.create({
     borderRadius: 6
   },
   contact: {
-    padding: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderColor: '#ddd'
   },
   selected: {
     backgroundColor: '#e0e7ff'
   },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
   name: {
     fontWeight: 'bold',
-    fontSize: 16
+    fontSize: 16,
+    color: '#111'
   },
-  message: {
+  hour: {
     fontSize: 12,
     color: '#666'
+  },
+  message: {
+    fontSize: 14,
+    color: '#444',
+    marginTop: 2
   }
 });
 

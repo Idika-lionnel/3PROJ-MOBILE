@@ -2,10 +2,9 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
-import axios from 'axios';
 import { ThemeContext } from '../context/ThemeContext';
+import axios from 'axios';
 import { API_URL } from '../config';
-//const API_URL = 'http://192.168.30.125:5050';
 
 const ChatHomeScreen = () => {
   const navigation = useNavigation();
@@ -24,6 +23,7 @@ const ChatHomeScreen = () => {
 
   useEffect(() => {
     if (!userId) return;
+
     axios.get(`${API_URL}/api/conversations/${userId}`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => setConversations(res.data));
@@ -40,10 +40,16 @@ const ChatHomeScreen = () => {
     if (selectedTab === 'unread') {
       return conversations.filter(conv => conv.unreadCount > 0);
     }
-    return selectedTab === 'contacts' ? contacts : conversations.map(conv => {
-      const other = conv.participants.find(p => p._id !== userId);
-      return { ...other, lastMessage: conv.lastMessage };
-    });
+    if (selectedTab === 'contacts') {
+      return contacts;
+    }
+    return conversations.map(conv => ({
+      _id: conv.otherUser?._id,
+      prenom: conv.otherUser?.prenom,
+      nom: conv.otherUser?.nom,
+      lastMessage: conv.lastMessage,
+      lastHour: conv.lastHour,
+    }));
   };
 
   const styles = createStyles(dark);
@@ -71,7 +77,12 @@ const ChatHomeScreen = () => {
             onPress={() => navigation.navigate('DirectChat', { receiver: item })}
           >
             <Text style={styles.name}>{item.prenom} {item.nom}</Text>
-            {item.lastMessage && <Text style={styles.last}>{item.lastMessage}</Text>}
+            {item.lastMessage && (
+              <View style={styles.messageRow}>
+                <Text style={styles.last}>{item.lastMessage}</Text>
+                {item.lastHour && <Text style={styles.hour}>{item.lastHour}</Text>}
+              </View>
+            )}
           </TouchableOpacity>
         )}
       />
@@ -113,9 +124,20 @@ const createStyles = (dark) => StyleSheet.create({
     color: dark ? '#fff' : '#111827',
     fontWeight: 'bold',
   },
+  messageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
   last: {
     color: dark ? '#d1d5db' : '#6b7280',
     fontSize: 12,
+    flex: 1,
+  },
+  hour: {
+    color: dark ? '#9ca3af' : '#9ca3af',
+    fontSize: 12,
+    marginLeft: 8,
   },
 });
 

@@ -9,12 +9,14 @@ const messageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 
-const conversationSchema = new mongoose.Schema(
-  {
-    participants: [{ _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } }],
-    messages: [messageSchema]
-  },
-  { timestamps: true }
-);
+const conversationSchema = new mongoose.Schema({
+  participants: [
+    { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  ],
+  lastMessage: { type: String, default: '' },
+  lastHour: { type: String, default: '' },
+  updatedAt: { type: Date, default: Date.now },
+
+});
 
 module.exports = mongoose.model('Conversation', conversationSchema);
