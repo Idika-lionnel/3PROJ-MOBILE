@@ -28,6 +28,8 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
 
   const [log, setLog] = useState([]);
   const [message, setMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const flatRef = useRef();
@@ -37,7 +39,6 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     const res = await axios.get(`${API_URL}/api/messages/${receiver._id}?currentUserId=${currentUserId}`);
     setLog(res.data);
 
-    // 🔄 Marquer tous les messages reçus comme lus
     await axios.patch(`${API_URL}/api/messages/read/${receiver._id}/${currentUserId}`);
   };
 
@@ -60,7 +61,6 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       if (isForThisChat && !alreadyExists) {
         setLog((prev) => [...prev, msg]);
 
-        // 🔄 Marquer comme lu dès réception si la conversation est ouverte
         if (msg.senderId === receiver._id) {
           await axios.patch(`${API_URL}/api/messages/read/${receiver._id}/${currentUserId}`);
         }
@@ -111,6 +111,14 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       console.error('Erreur envoi fichier :', err.response?.data || err.message);
     }
   };
+
+  const filteredMessages = log.filter((msg) => {
+    if (!searchTerm) return true;
+    const lower = searchTerm.toLowerCase();
+    const contentMatch = msg.message?.toLowerCase().includes(lower);
+    const fileMatch = msg.attachmentUrl?.toLowerCase().includes(lower);
+    return contentMatch || fileMatch;
+  });
 
   const renderItem = ({ item }) => {
     const isMe = item.senderId === currentUserId;
@@ -170,14 +178,30 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
         keyboardVerticalOffset={90}
       >
         <View style={styles.container}>
+          {/* 🔍 Barre de recherche */}
+          <View style={styles.searchRow}>
+            <TouchableOpacity onPress={() => setIsSearchVisible(!isSearchVisible)}>
+              <Ionicons name="search" size={24} color="#666" />
+            </TouchableOpacity>
+            {isSearchVisible && (
+              <TextInput
+                placeholder="Rechercher dans les messages..."
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                style={styles.searchInput}
+              />
+            )}
+          </View>
+
           <FlatList
             ref={flatRef}
-            data={log}
+            data={filteredMessages}
             renderItem={renderItem}
             keyExtractor={(item, i) => i.toString()}
             onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
             style={{ flex: 1 }}
           />
+
           <View style={styles.footerBar}>
             <View style={styles.inputContainer}>
               <TextInput
@@ -209,6 +233,21 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingBottom: 8,
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    paddingVertical: 4,
+    fontSize: 15,
+  },
   footerBar: {
     flexDirection: 'row',
     alignItems: 'center',
