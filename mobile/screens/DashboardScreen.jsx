@@ -2,8 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import DashboardMobile from './DashboardMobile';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-
-import { API_URL } from '../config'; 
+import { API_URL } from '../config';
+//const API_URL = ':5050'; // ⚠️ adapte à ton IP
 
 const DashboardScreen = () => {
   const { token } = useContext(AuthContext);

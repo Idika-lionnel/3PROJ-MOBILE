@@ -7,8 +7,8 @@ import { ThemeContext } from '../context/ThemeContext'; // 👈 Ajout
 import axios from 'axios';
 
 WebBrowser.maybeCompleteAuthSession();
-
-import { API_URL } from '../config'; 
+import { API_URL } from '../config';
+//const API_URL = ''; // adapte à ton IP
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext);

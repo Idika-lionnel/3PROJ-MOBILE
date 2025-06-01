@@ -4,8 +4,9 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { API_URL } from '../config';
 
-import { API_URL } from '../config'; 
+//const API_URL = '';
 
 const WorkspaceDetailScreen = () => {
   const { params } = useRoute();

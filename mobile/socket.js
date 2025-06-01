@@ -1,6 +1,7 @@
 // socket.js
 import { io } from 'socket.io-client';
+import { API_URL } from './config';
 
-const socket = io('http://10.128.173.228'); 
+const socket = io(API_URL);
 
 export default socket;

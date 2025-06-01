@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 const ConversationListMobile = ({ onSelect, selectedId }) => {
   const { token } = React.useContext(AuthContext);
@@ -10,12 +11,12 @@ const ConversationListMobile = ({ onSelect, selectedId }) => {
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const userRes = await axios.get('http://192.168.0.42:5050/api/auth/me', {
+      const userRes = await axios.get(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const user = userRes.data.user;
 
-      const res = await axios.get(`http://192.168.0.42:5050/api/conversations/${user._id}`, {
+      const res = await axios.get(`${API_URL}/api/conversations/${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

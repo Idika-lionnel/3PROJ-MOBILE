@@ -2,8 +2,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
-import { API_URL } from '../config'; 
+import { API_URL } from '../config';
+//const API_URL = ''; // adapte à ton IP
 
 export const AuthContext = createContext();
 

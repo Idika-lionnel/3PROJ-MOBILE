@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -5,7 +6,7 @@ const passport = require('passport');
 const session = require('express-session');
 const http = require('http');
 const { Server } = require('socket.io');
-const os = require('os'); // ✅ Ajouté
+const DirectMessage = require('./models/DirectMessage');
 require('dotenv').config();
 
 // 📦 Import des routes
@@ -32,6 +33,9 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+
+// 📁 Fichiers statiques (uploads)
+app.use('/uploads', express.static('uploads'));
 
 // 🧭 Routes API
 app.use('/api/auth', authRoutes);
@@ -67,35 +71,48 @@ io.on('connection', (socket) => {
   console.log('✅ Client connecté via Socket.io');
 
   socket.on('join', (userId) => {
-    socket.join(userId);
-    console.log(`🟢 L'utilisateur ${userId} a rejoint sa room`);
+    if (userId) {
+      socket.join(userId);
+      console.log(`🟢 L'utilisateur ${userId} a rejoint sa room`);
+    } else {
+      console.warn('⚠️ userId non fourni dans "join"');
+    }
   });
 
-  socket.on('direct_message', (msg) => {
-    io.to(msg.receiverId).emit('new_direct_message', msg);
-    console.log(`📩 Message direct de ${msg.senderId} à ${msg.receiverId}`);
-  });
+ socket.on('direct_message', async (msg) => {
+   try {
+     // ❌ Skip les fichiers venant du backend (ils ont déjà été créés)
+     if (msg.attachmentUrl && msg.type === 'file') {
+       return io.to(msg.receiverId).emit('new_direct_message', msg); // juste emit
+     }
+
+     // ✅ Sinon, on enregistre les messages texte ici
+     if (!msg.senderId || !msg.receiverId) {
+       return console.warn('❌ senderId ou receiverId manquant dans le message');
+     }
+
+     const savedMessage = await DirectMessage.create({
+       senderId: msg.senderId,
+       receiverId: msg.receiverId,
+       message: msg.message || '',
+       attachmentUrl: '',
+       type: 'text',
+       timestamp: new Date(),
+     });
+
+     io.to(msg.receiverId).emit('new_direct_message', savedMessage);
+     console.log(`📤 Message ${savedMessage.type} envoyé à ${msg.receiverId}`);
+   } catch (err) {
+     console.error('❌ Erreur enregistrement message direct :', err);
+   }
+ });
 
   socket.on('disconnect', () => {
     console.log('❌ Client déconnecté');
   });
 });
-
-// 🧠 Fonction pour récupérer l'IP locale
-function getLocalIPAddress() {
-  const interfaces = os.networkInterfaces();
-  for (const name in interfaces) {
-    for (const net of interfaces[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
-        return net.address;
-      }
-    }
-  }
-  return 'localhost';
-}
-
-const localIP = getLocalIPAddress();
-
-server.listen(PORT, IP, () => {
-  console.log(`🌐 Serveur accessible sur http://${localIP}:${PORT}`);
+app.set('io', io);
+// 🚀 Démarrage du serveur
+server.listen(PORT, () => {
+  console.log(`🌐 Serveur démarré sur http://localhost:${PORT}`);
 });
