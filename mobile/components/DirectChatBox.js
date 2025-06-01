@@ -36,6 +36,9 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     if (!receiver?._id || !currentUserId) return;
     const res = await axios.get(`${API_URL}/api/messages/${receiver._id}?currentUserId=${currentUserId}`);
     setLog(res.data);
+
+    // 🔄 Marquer tous les messages reçus comme lus
+    await axios.patch(`${API_URL}/api/messages/read/${receiver._id}/${currentUserId}`);
   };
 
   useEffect(() => {
@@ -48,14 +51,19 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     if (!currentUserId) return;
     socket.emit('join', currentUserId);
 
-    const handler = (msg) => {
+    const handler = async (msg) => {
       const isForThisChat =
-        msg.senderId === receiver._id || msg.receiverId === receiver._id;
+        (msg.senderId === receiver._id && msg.receiverId === currentUserId) ||
+        (msg.receiverId === receiver._id && msg.senderId === currentUserId);
 
       const alreadyExists = log.some((m) => m._id && msg._id && m._id === msg._id);
-
       if (isForThisChat && !alreadyExists) {
         setLog((prev) => [...prev, msg]);
+
+        // 🔄 Marquer comme lu dès réception si la conversation est ouverte
+        if (msg.senderId === receiver._id) {
+          await axios.patch(`${API_URL}/api/messages/read/${receiver._id}/${currentUserId}`);
+        }
       }
     };
 
@@ -75,7 +83,6 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     };
 
     socket.emit('direct_message', msg);
-
     setMessage('');
   };
 
@@ -229,7 +236,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 10,
   },
-  icon: { fontSize: 20 },
   messageBlock: {
     marginVertical: 6,
     paddingHorizontal: 10,
@@ -243,7 +249,7 @@ const styles = StyleSheet.create({
   },
   bubbleYou: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e3f1ff', // ancienne couleur
+    backgroundColor: '#e3f1ff',
     borderRadius: 12,
     padding: 10,
     maxWidth: '70%',

@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Conversation = require('../models/Conversation');
-const requireAuth = require('../middleware/requireAuth'); // crée ce fichier si besoin
+const DirectMessage = require('../models/DirectMessage');
+const requireAuth = require('../middleware/requireAuth');
 
+// 📩 Créer une conversation
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { senderId, receiverId } = req.body;
@@ -14,7 +17,6 @@ router.post('/', requireAuth, async (req, res) => {
     const senderObjId = new mongoose.Types.ObjectId(senderId);
     const receiverObjId = new mongoose.Types.ObjectId(receiverId);
 
-    // ✅ Recherche conversation avec ObjectId simples
     let conv = await Conversation.findOne({
       participants: { $all: [senderObjId, receiverObjId], $size: 2 },
     });
@@ -26,7 +28,6 @@ router.post('/', requireAuth, async (req, res) => {
         lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         updatedAt: new Date()
       });
-
     }
 
     res.status(201).json(conv);
@@ -35,6 +36,7 @@ router.post('/', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
 // 🔄 Obtenir toutes les conversations d'un utilisateur
 router.get('/:userId', requireAuth, async (req, res) => {
   try {
@@ -42,20 +44,30 @@ router.get('/:userId', requireAuth, async (req, res) => {
 
     const conversations = await Conversation.find({ participants: userId })
       .sort({ updatedAt: -1 })
-      .populate('participants', 'prenom nom email') // Récupère infos utiles
+      .populate('participants', 'prenom nom email')
       .lean();
 
-    const formatted = conversations.map(conv => {
+    const formatted = await Promise.all(conversations.map(async (conv) => {
       const other = conv.participants.find(p => p._id.toString() !== userId);
+
+      let unreadCount = 0;
+      if (other && other._id) {
+        unreadCount = await DirectMessage.countDocuments({
+          senderId: new mongoose.Types.ObjectId(other._id),
+          receiverId: new mongoose.Types.ObjectId(userId),
+          read: false
+        });
+      }
 
       return {
         _id: conv._id,
         lastMessage: conv.lastMessage,
         lastHour: conv.lastHour,
         updatedAt: conv.updatedAt,
-        otherUser: other, // Nom + email de l'autre participant
+        otherUser: other,
+        unreadCount
       };
-    });
+    }));
 
     res.json(formatted);
   } catch (err) {
@@ -63,4 +75,5 @@ router.get('/:userId', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
 module.exports = router;

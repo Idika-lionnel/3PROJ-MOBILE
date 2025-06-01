@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { API_URL } from '../config';
@@ -33,46 +33,52 @@ const ChatHomeScreen = () => {
     setConversations(res.data);
   };
 
-  useEffect(() => {
-    if (!userId) return;
-    fetchConversations(userId);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!userId) return;
 
-    axios.get(`${API_URL}/users/all`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then((res) => {
-      const filtered = res.data.filter((u) => u._id !== userId);
-      setContacts(filtered);
-    });
+      fetchConversations(userId);
 
-    socket.on('new_direct_message', (msg) => {
-      if (
-        msg.receiverId === userId ||
-        msg.senderId === userId
-      ) {
-        fetchConversations(userId);
-      }
-    });
+      axios.get(`${API_URL}/users/all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => {
+        const filtered = res.data.filter((u) => u._id !== userId);
+        setContacts(filtered);
+      });
 
-    return () => socket.off('new_direct_message');
-  }, [userId]);
+      const handler = (msg) => {
+        if (msg.receiverId === userId || msg.senderId === userId) {
+          fetchConversations(userId);
+        }
+      };
+
+      socket.on('new_direct_message', handler);
+      return () => socket.off('new_direct_message', handler);
+    }, [userId])
+  );
 
   const getFilteredData = () => {
     if (selectedTab === 'unread') {
-      return conversations.filter((conv) => conv.unreadCount > 0);
+      return conversations
+        .filter((conv) => conv.unreadCount > 0)
+        .map((conv) => ({
+          ...conv.otherUser,
+          lastMessage: conv.lastMessage,
+          lastHour: conv.lastHour,
+          unreadCount: conv.unreadCount,
+        }));
     }
 
     if (selectedTab === 'contacts') {
       return contacts;
     }
 
-    return conversations.map((conv) => {
-      const other = conv.participants?.find((p) => p._id !== userId) || conv.otherUser;
-      return {
-        ...other,
-        lastMessage: conv.lastMessage,
-        lastHour: conv.lastHour,
-      };
-    });
+    return conversations.map((conv) => ({
+      ...conv.otherUser,
+      lastMessage: conv.lastMessage,
+      lastHour: conv.lastHour,
+      unreadCount: conv.unreadCount || 0,
+    }));
   };
 
   const styles = createStyles(dark);
@@ -100,15 +106,26 @@ const ChatHomeScreen = () => {
             onPress={() => navigation.navigate('DirectChat', { receiver: item })}
           >
             <View style={styles.row}>
-              <Text style={styles.name}>
-                {item.prenom} {item.nom}
-              </Text>
-              {item.lastHour && (
-                <Text style={styles.hour}>{item.lastHour}</Text>
-              )}
+              <View>
+                <Text style={styles.name}>
+                  {item.prenom} {item.nom}
+                </Text>
+                {selectedTab === 'contacts' && (
+                  <Text style={styles.email}>{item.email}</Text>
+                )}
+              </View>
+              {item.lastHour && <Text style={styles.hour}>{item.lastHour}</Text>}
             </View>
-            {item.lastMessage && (
-              <Text style={styles.last}>{item.lastMessage}</Text>
+
+            {selectedTab !== 'contacts' && (
+              <View style={styles.row}>
+                <Text style={styles.last}>{item.lastMessage}</Text>
+                {item.unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{item.unreadCount}</Text>
+                  </View>
+                )}
+              </View>
             )}
           </TouchableOpacity>
         )}
@@ -151,6 +168,12 @@ const createStyles = (dark) =>
     name: {
       color: dark ? '#fff' : '#111827',
       fontWeight: 'bold',
+      fontSize: 16,
+    },
+    email: {
+      color: dark ? '#d1d5db' : '#6b7280',
+      fontSize: 12,
+      marginTop: 2,
     },
     last: {
       color: dark ? '#d1d5db' : '#6b7280',
@@ -159,10 +182,26 @@ const createStyles = (dark) =>
     row: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'center',
     },
     hour: {
       fontSize: 12,
       color: '#888',
+    },
+    badge: {
+      backgroundColor: '#FF3B30',
+      borderRadius: 10,
+      minWidth: 20,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 6,
+    },
+    badgeText: {
+      color: 'white',
+      fontSize: 12,
+      fontWeight: 'bold',
     },
   });
 

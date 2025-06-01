@@ -36,15 +36,15 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       receiverId,
       type: type || 'file',
       attachmentUrl: `http://${req.hostname}:5050/uploads/${req.file.filename}`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      read: false,
     });
 
     // ✅ Émettre le message en temps réel via socket.io
     const io = req.app.get('io');
     io.to(receiverId).emit('new_direct_message', newMsg);
-    io.to(senderId).emit('new_direct_message', newMsg); // pour affichage immédiat chez l'envoyeur aussi
+    io.to(senderId).emit('new_direct_message', newMsg);
 
-    // ✅ Répondre au client mobile avec le message complet
     res.status(200).json(newMsg);
   } catch (err) {
     console.error('❌ Erreur upload fichier :', err);
@@ -68,6 +68,22 @@ router.get('/:receiverId', async (req, res) => {
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: 'Erreur chargement messages' });
+  }
+});
+
+// ✅ Marquer tous les messages reçus comme lus dans une conversation
+router.patch('/read/:senderId/:receiverId', async (req, res) => {
+  const { senderId, receiverId } = req.params;
+
+  try {
+    await Message.updateMany(
+      { senderId, receiverId, read: false },
+      { $set: { read: true } }
+    );
+    res.status(200).json({ message: 'Messages marqués comme lus' });
+  } catch (err) {
+    console.error('Erreur mise à jour messages lus :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

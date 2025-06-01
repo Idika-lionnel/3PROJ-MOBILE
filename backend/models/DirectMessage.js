@@ -6,7 +6,8 @@ const directMessageSchema = new mongoose.Schema({
   message: { type: String },
   attachmentUrl: { type: String },
   type: { type: String, enum: ['text', 'file'], default: 'text' },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
+  read: { type: Boolean, default: false }  // ✅ Ajout ici
 });
 
 module.exports = mongoose.model('DirectMessage', directMessageSchema);

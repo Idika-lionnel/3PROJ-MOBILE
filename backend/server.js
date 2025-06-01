@@ -63,6 +63,35 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   },
 });
+//fonction updateConversation
+async function updateConversation(senderId, receiverId, lastMsg) {
+  let conv = await Conversation.findOne({
+    participants: { $all: [senderId, receiverId], $size: 2 }
+  });
+
+  const hour = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (!conv) {
+    await Conversation.create({
+      participants: [senderId, receiverId],
+      lastMessage: lastMsg,
+      lastHour: hour,
+      updatedAt: new Date()
+    });
+  } else {
+    await Conversation.updateOne(
+      { _id: conv._id },
+      {
+        $set: {
+          lastMessage: lastMsg,
+          lastHour: hour,
+          updatedAt: new Date()
+        }
+      }
+    );
+  }
+}
+
 
 // 💬 Socket.io
 io.on('connection', (socket) => {
@@ -83,67 +112,32 @@ io.on('connection', (socket) => {
        return console.warn('❌ senderId ou receiverId manquant dans le message');
      }
 
-     // 🔁 Cas 1 : Fichier (déjà créé)
+     // Cas 1 : fichier
      if (msg.attachmentUrl && msg.type === 'file') {
-       let conv = await Conversation.findOne({
-         participants: { $all: [msg.senderId, msg.receiverId], $size: 2 }
-       });
+       await updateConversation(
+         msg.senderId,
+         msg.receiverId,
+         msg.attachmentUrl.split('/').pop() || '[Fichier]'
+       );
 
-       if (!conv) {
-         conv = await Conversation.create({
-           participants: [msg.senderId, msg.receiverId],
-           lastMessage: msg.attachmentUrl.split('/').pop() || '[Fichier]',
-           lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-         });
-       } else {
-         await Conversation.updateOne(
-           { _id: conv._id },
-           {
-             $set: {
-               lastMessage: msg.attachmentUrl.split('/').pop() || '[Fichier]',
-               lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-               updatedAt: new Date()
-             }
-           }
-         );
-       }
-
-       return io.to(msg.receiverId).emit('new_direct_message', msg);
+       io.to(msg.receiverId).emit('new_direct_message', msg);
+       io.to(msg.senderId).emit('new_direct_message', msg);
+       return;
      }
 
-     // 🔁 Cas 2 : Texte
+
+     // Cas 2 : texte
      const savedMessage = await DirectMessage.create({
        senderId: msg.senderId,
        receiverId: msg.receiverId,
-       message: msg.message || '',
+       message: msg.message,
        attachmentUrl: '',
        type: 'text',
        timestamp: new Date(),
+       read: false
      });
 
-     let conv = await Conversation.findOne({
-       participants: { $all: [msg.senderId, msg.receiverId], $size: 2 }
-     });
-
-     if (!conv) {
-       conv = await Conversation.create({
-         participants: [msg.senderId, msg.receiverId],
-         lastMessage: msg.message,
-         lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-       });
-     } else {
-       await Conversation.updateOne(
-         { _id: conv._id },
-         {
-           $set: {
-             lastMessage: msg.message,
-             lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-             updatedAt: new Date()
-           }
-         }
-       );
-     }
-
+     await updateConversation(msg.senderId, msg.receiverId, msg.message);
      io.to(msg.receiverId).emit('new_direct_message', savedMessage);
      io.to(msg.senderId).emit('new_direct_message', savedMessage);
      console.log(`📤 Message ${savedMessage.type} envoyé à ${msg.receiverId}`);
