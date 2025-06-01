@@ -1,5 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  TextInput,
+} from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -15,6 +22,7 @@ const ChatHomeScreen = () => {
   const [conversations, setConversations] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [selectedTab, setSelectedTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -39,12 +47,14 @@ const ChatHomeScreen = () => {
 
       fetchConversations(userId);
 
-      axios.get(`${API_URL}/users/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((res) => {
-        const filtered = res.data.filter((u) => u._id !== userId);
-        setContacts(filtered);
-      });
+      axios
+        .get(`${API_URL}/users/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const filtered = res.data.filter((u) => u._id !== userId);
+          setContacts(filtered);
+        });
 
       const handler = (msg) => {
         if (msg.receiverId === userId || msg.senderId === userId) {
@@ -58,8 +68,10 @@ const ChatHomeScreen = () => {
   );
 
   const getFilteredData = () => {
+    let baseData;
+
     if (selectedTab === 'unread') {
-      return conversations
+      baseData = conversations
         .filter((conv) => conv.unreadCount > 0)
         .map((conv) => ({
           ...conv.otherUser,
@@ -67,18 +79,23 @@ const ChatHomeScreen = () => {
           lastHour: conv.lastHour,
           unreadCount: conv.unreadCount,
         }));
+    } else if (selectedTab === 'contacts') {
+      baseData = contacts;
+    } else {
+      baseData = conversations.map((conv) => ({
+        ...conv.otherUser,
+        lastMessage: conv.lastMessage,
+        lastHour: conv.lastHour,
+        unreadCount: conv.unreadCount || 0,
+      }));
     }
 
-    if (selectedTab === 'contacts') {
-      return contacts;
-    }
+    if (!searchQuery.trim()) return baseData;
 
-    return conversations.map((conv) => ({
-      ...conv.otherUser,
-      lastMessage: conv.lastMessage,
-      lastHour: conv.lastHour,
-      unreadCount: conv.unreadCount || 0,
-    }));
+    return baseData.filter((item) => {
+      const name = `${item.prenom || ''} ${item.nom || ''}`.toLowerCase();
+      return name.includes(searchQuery.toLowerCase());
+    });
   };
 
   const styles = createStyles(dark);
@@ -96,6 +113,14 @@ const ChatHomeScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
+
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Rechercher..."
+        placeholderTextColor="#999"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
 
       <FlatList
         data={getFilteredData()}
@@ -158,6 +183,13 @@ const createStyles = (dark) =>
     tabText: {
       color: '#111827',
       fontWeight: 'bold',
+    },
+    searchBar: {
+      backgroundColor: '#f1f1f1',
+      borderRadius: 10,
+      padding: 10,
+      marginBottom: 10,
+      color: dark ? '#fff' : '#000',
     },
     item: {
       backgroundColor: dark ? '#1f2937' : '#fff',
