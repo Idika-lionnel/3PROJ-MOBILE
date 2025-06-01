@@ -93,7 +93,7 @@ io.on('connection', (socket) => {
          conv = await Conversation.create({
            participants: [msg.senderId, msg.receiverId],
            lastMessage: msg.attachmentUrl.split('/').pop() || '[Fichier]',
-           lastHour: new Date().toLocaleTimeString()
+           lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
          });
        } else {
          await Conversation.updateOne(
@@ -129,7 +129,7 @@ io.on('connection', (socket) => {
        conv = await Conversation.create({
          participants: [msg.senderId, msg.receiverId],
          lastMessage: msg.message,
-         lastHour: new Date().toLocaleTimeString()
+         lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
        });
      } else {
        await Conversation.updateOne(

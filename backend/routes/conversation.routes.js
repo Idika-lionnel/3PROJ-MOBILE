@@ -21,10 +21,12 @@ router.post('/', requireAuth, async (req, res) => {
 
     if (!conv) {
       conv = await Conversation.create({
-        participants: [senderObjId, receiverObjId],
+        participants: [senderId, receiverId],
         lastMessage: '',
-        lastHour: '',
+        lastHour: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        updatedAt: new Date()
       });
+
     }
 
     res.status(201).json(conv);
