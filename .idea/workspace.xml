@@ -5,8 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6f1cc44e-4fb3-4306-a97b-41bb208cd5e6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/DirectMessage.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/DirectMessage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/message.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/message.routes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile/components/DirectChatBox.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/components/DirectChatBox.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

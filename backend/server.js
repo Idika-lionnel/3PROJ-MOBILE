@@ -94,6 +94,7 @@ async function updateConversation(senderId, receiverId, lastMsg) {
 
 
 // 💬 Socket.io
+// 💬 Socket.io
 io.on('connection', (socket) => {
   console.log('✅ Client connecté via Socket.io');
 
@@ -106,45 +107,54 @@ io.on('connection', (socket) => {
     }
   });
 
- socket.on('direct_message', async (msg) => {
-   try {
-     if (!msg.senderId || !msg.receiverId) {
-       return console.warn('❌ senderId ou receiverId manquant dans le message');
-     }
+  socket.on('direct_message', async (msg) => {
+    try {
+      if (!msg.senderId || !msg.receiverId) {
+        return console.warn('❌ senderId ou receiverId manquant dans le message');
+      }
 
-     // Cas 1 : fichier
-     if (msg.attachmentUrl && msg.type === 'file') {
-       await updateConversation(
-         msg.senderId,
-         msg.receiverId,
-         msg.attachmentUrl.split('/').pop() || '[Fichier]'
-       );
+      if (msg.attachmentUrl && msg.type === 'file') {
+        await updateConversation(
+          msg.senderId,
+          msg.receiverId,
+          msg.attachmentUrl.split('/').pop() || '[Fichier]'
+        );
 
-       io.to(msg.receiverId).emit('new_direct_message', msg);
-       io.to(msg.senderId).emit('new_direct_message', msg);
-       return;
-     }
+        io.to(msg.receiverId).emit('new_direct_message', msg);
+        io.to(msg.senderId).emit('new_direct_message', msg);
+        return;
+      }
 
+      const savedMessage = await DirectMessage.create({
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
+        message: msg.message,
+        attachmentUrl: '',
+        type: 'text',
+        timestamp: new Date(),
+        read: false,
+      });
 
-     // Cas 2 : texte
-     const savedMessage = await DirectMessage.create({
-       senderId: msg.senderId,
-       receiverId: msg.receiverId,
-       message: msg.message,
-       attachmentUrl: '',
-       type: 'text',
-       timestamp: new Date(),
-       read: false
-     });
+      await updateConversation(msg.senderId, msg.receiverId, msg.message);
+      io.to(msg.receiverId).emit('new_direct_message', savedMessage);
+      io.to(msg.senderId).emit('new_direct_message', savedMessage);
+      console.log(`📤 Message ${savedMessage.type} envoyé à ${msg.receiverId}`);
+    } catch (err) {
+      console.error('❌ Erreur enregistrement message direct :', err);
+    }
+  });
 
-     await updateConversation(msg.senderId, msg.receiverId, msg.message);
-     io.to(msg.receiverId).emit('new_direct_message', savedMessage);
-     io.to(msg.senderId).emit('new_direct_message', savedMessage);
-     console.log(`📤 Message ${savedMessage.type} envoyé à ${msg.receiverId}`);
-   } catch (err) {
-     console.error('❌ Erreur enregistrement message direct :', err);
-   }
- });
+  // ✅ Réaction ajoutée ou modifiée
+  socket.on('reaction_updated', ({ messageId, userId, emoji }) => {
+    console.log(`🔄 Réaction ajoutée/maj pour message ${messageId} par ${userId}`);
+    io.emit('reaction_updated', { messageId, userId, emoji });
+  });
+
+  // ✅ Réaction supprimée
+  socket.on('reaction_removed', ({ messageId, userId }) => {
+    console.log(`❌ Réaction retirée pour message ${messageId} par ${userId}`);
+    io.emit('reaction_removed', { messageId, userId });
+  });
 
   socket.on('disconnect', () => {
     console.log('❌ Client déconnecté');
@@ -152,7 +162,6 @@ io.on('connection', (socket) => {
 });
 
 app.set('io', io);
-
 // 🚀 Lancement
 server.listen(PORT, () => {
   console.log(`🌐 Serveur démarré sur http://localhost:${PORT}`);

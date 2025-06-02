@@ -13,6 +13,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 
+const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
+
 const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const { user } = useContext(AuthContext);
   const currentUserId = propUserId || user?._id;
@@ -29,16 +32,18 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const [log, setLog] = useState([]);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  //const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [reactionPickerVisible, setReactionPickerVisible] = useState(null);
+  const [selectedEmoji, setSelectedEmoji] = useState(null);
+  const [showReactionsFor, setShowReactionsFor] = useState(null);
   const flatRef = useRef();
 
   const fetchMessages = async () => {
     if (!receiver?._id || !currentUserId) return;
     const res = await axios.get(`${API_URL}/api/messages/${receiver._id}?currentUserId=${currentUserId}`);
     setLog(res.data);
-
     await axios.patch(`${API_URL}/api/messages/read/${receiver._id}/${currentUserId}`);
   };
 
@@ -47,6 +52,10 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       fetchMessages();
     }
   }, [receiver]);
+
+  useEffect(() => {
+    flatRef.current?.scrollToEnd({ animated: true });
+  }, [log]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -67,13 +76,48 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       }
     };
 
+    const handleReactionUpdate = ({ messageId, userId, emoji }) => {
+      setLog(prev =>
+        prev.map(msg =>
+          msg._id === messageId
+            ? {
+                ...msg,
+                reactions: [
+                  ...(msg.reactions || []).filter(r => r.userId !== userId),
+                  { userId, emoji },
+                ],
+              }
+            : msg
+        )
+      );
+    };
+
+    const handleReactionRemove = ({ messageId, userId }) => {
+      setLog(prev =>
+        prev.map(msg =>
+          msg._id === messageId
+            ? {
+                ...msg,
+                reactions: (msg.reactions || []).filter(r => r.userId !== userId),
+              }
+            : msg
+        )
+      );
+    };
+
     socket.on('new_direct_message', handler);
-    return () => socket.off('new_direct_message', handler);
-  }, [receiver, log]);
+    socket.on('reaction_updated', handleReactionUpdate);
+    socket.on('reaction_removed', handleReactionRemove);
+
+    return () => {
+      socket.off('new_direct_message', handler);
+      socket.off('reaction_updated', handleReactionUpdate);
+      socket.off('reaction_removed', handleReactionRemove);
+    };
+  }, [receiver, currentUserId, log]);
 
   const sendMessage = () => {
     if (!message.trim() || !currentUserId || !receiver?._id) return;
-
     const msg = {
       senderId: currentUserId,
       receiverId: receiver._id,
@@ -81,7 +125,6 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       type: 'text',
       timestamp: new Date().toISOString(),
     };
-
     socket.emit('direct_message', msg);
     setMessage('');
   };
@@ -105,19 +148,33 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       const result = await axios.post(`${API_URL}/api/messages/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
       socket.emit('direct_message', result.data);
     } catch (err) {
       console.error('Erreur envoi fichier :', err.response?.data || err.message);
     }
   };
 
+  const toggleReaction = async (messageId, currentReaction, emoji) => {
+    try {
+      if (currentReaction) {
+        await axios.delete(`${API_URL}/api/messages/reaction/${messageId}`, {
+          data: { userId: currentUserId },
+        });
+      } else {
+        await axios.post(`${API_URL}/api/messages/reaction/${messageId}`, {
+          userId: currentUserId,
+          emoji,
+        });
+      }
+    } catch (err) {
+      console.error('Erreur réaction :', err.response?.data || err.message);
+    }
+  };
+
   const filteredMessages = log.filter((msg) => {
     if (!searchTerm) return true;
     const lower = searchTerm.toLowerCase();
-    const contentMatch = msg.message?.toLowerCase().includes(lower);
-    const fileMatch = msg.attachmentUrl?.toLowerCase().includes(lower);
-    return contentMatch || fileMatch;
+    return msg.message?.toLowerCase().includes(lower) || msg.attachmentUrl?.toLowerCase().includes(lower);
   });
 
   const renderItem = ({ item }) => {
@@ -125,6 +182,11 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     const fullUrl = item.attachmentUrl?.replace('http://localhost:5050', API_URL);
     const timestamp = item.timestamp ? format(new Date(item.timestamp), 'HH:mm') : '';
     const timestampStyle = isMe ? styles.timestampRight : styles.timestampLeft;
+
+    const currentUserReaction = (item.reactions || []).find(r => r.userId === currentUserId);
+    const showEmojiBar = showReactionsFor === item._id;
+
+    const handleLongPress = () => setShowReactionsFor(item._id);
 
     if (item.attachmentUrl && /\.(jpg|jpeg|png|gif)$/i.test(item.attachmentUrl)) {
       return (
@@ -135,10 +197,39 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
               setIsModalVisible(true);
             }}
             style={{ alignSelf: isMe ? 'flex-end' : 'flex-start' }}
+            onLongPress={handleLongPress}
           >
             <Image source={{ uri: fullUrl }} style={styles.image} />
           </TouchableOpacity>
+          {showEmojiBar && (
+            <View style={styles.emojiBar}>
+              {emojiOptions.map((emoji) => (
+                <TouchableOpacity
+                  key={emoji}
+                  onPress={() => {
+                    setSelectedEmoji(emoji);
+                    toggleReaction(item._id, currentUserReaction, emoji);
+                    setShowReactionsFor(null);
+                  }}
+                >
+                  <Text style={styles.emoji}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <Text style={timestampStyle}>{timestamp}</Text>
+          {item.reactions?.length > 0 && (
+            <View
+              style={[
+                styles.reactionRow,
+                { alignSelf: isMe ? 'flex-end' : 'flex-start' },
+              ]}
+            >
+              {item.reactions.map((r, i) => (
+                <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
+              ))}
+            </View>
+          )}
         </View>
       );
     }
@@ -147,25 +238,84 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
       return (
         <View style={styles.messageBlock}>
-          <View style={isMeStyle}>
-            <TouchableOpacity onPress={() => Linking.openURL(fullUrl)}>
-              <Text style={{ color: isMe ? '#fff' : '#224262' }}>
-                📎 {item.attachmentUrl.split('/').pop()}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={isMeStyle}
+            onPress={() => Linking.openURL(fullUrl)}
+            onLongPress={handleLongPress}
+          >
+            <Text style={{ color: isMe ? '#fff' : '#224262' }}>
+              📎 {item.attachmentUrl.split('/').pop()}
+            </Text>
+          </TouchableOpacity>
+          {showEmojiBar && (
+            <View style={styles.emojiBar}>
+              {emojiOptions.map((emoji) => (
+                <TouchableOpacity
+                  key={emoji}
+                  onPress={() => {
+                    setSelectedEmoji(emoji);
+                    toggleReaction(item._id, currentUserReaction, emoji);
+                    setShowReactionsFor(null);
+                  }}
+                >
+                  <Text style={styles.emoji}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <Text style={timestampStyle}>{timestamp}</Text>
+          {item.reactions?.length > 0 && (
+            <View
+              style={[
+                styles.reactionRow,
+                { alignSelf: isMe ? 'flex-end' : 'flex-start' },
+              ]}
+            >
+              {item.reactions.map((r, i) => (
+                <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
+              ))}
+            </View>
+          )}
         </View>
       );
     }
 
     const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
+
     return (
       <View style={styles.messageBlock}>
-        <View style={isMeStyle}>
+        <TouchableOpacity style={isMeStyle} onLongPress={handleLongPress}>
           <Text style={isMe ? styles.text : styles.textYou}>{item.message}</Text>
-        </View>
+        </TouchableOpacity>
+        {showEmojiBar && (
+          <View style={styles.emojiBar}>
+            {emojiOptions.map((emoji) => (
+              <TouchableOpacity
+                key={emoji}
+                onPress={() => {
+                  setSelectedEmoji(emoji);
+                  toggleReaction(item._id, currentUserReaction, emoji);
+                  setShowReactionsFor(null);
+                }}
+              >
+                <Text style={styles.emoji}>{emoji}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
         <Text style={timestampStyle}>{timestamp}</Text>
+        {item.reactions?.length > 0 && (
+          <View
+            style={[
+              styles.reactionRow,
+              { alignSelf: isMe ? 'flex-end' : 'flex-start' },
+            ]}
+          >
+            {item.reactions.map((r, i) => (
+              <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
+            ))}
+          </View>
+        )}
       </View>
     );
   };
@@ -178,26 +328,22 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
         keyboardVerticalOffset={90}
       >
         <View style={styles.container}>
-          {/* 🔍 Barre de recherche */}
           <View style={styles.searchRow}>
-            <TouchableOpacity onPress={() => setIsSearchVisible(!isSearchVisible)}>
-              <Ionicons name="search" size={24} color="#666" />
-            </TouchableOpacity>
-            {isSearchVisible && (
-              <TextInput
-                placeholder="Rechercher dans les messages..."
-                value={searchTerm}
-                onChangeText={setSearchTerm}
-                style={styles.searchInput}
-              />
-            )}
+            <Ionicons name="search" size={24} color="#666" />
+            <TextInput
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              style={styles.searchInput}
+              placeholderTextColor="#999"
+            />
           </View>
 
           <FlatList
             ref={flatRef}
             data={filteredMessages}
             renderItem={renderItem}
-            keyExtractor={(item, i) => i.toString()}
+            keyExtractor={(item, i) => item._id?.toString() || i.toString()}
             onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
             style={{ flex: 1 }}
           />
@@ -208,7 +354,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
                 value={message}
                 onChangeText={setMessage}
                 style={styles.inputWebStyle}
-                placeholder="Message ....."
+                placeholder="Message..."
                 placeholderTextColor="#999"
               />
             </View>
@@ -221,7 +367,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
           </View>
         </View>
 
-        <Modal visible={isModalVisible} transparent={true}>
+        <Modal visible={isModalVisible} transparent>
           <Pressable style={styles.modalOverlay} onPress={() => setIsModalVisible(false)}>
             <Image source={{ uri: selectedImage }} style={styles.fullImage} resizeMode="contain" />
           </Pressable>
@@ -240,6 +386,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     backgroundColor: '#fff',
     gap: 8,
+     paddingTop: 4,     // Ajouté
+      paddingBottom: 4,  // Réduit
+      marginTop: -4,     // Ajouté pour coller à l'entête
   },
   searchInput: {
     flex: 1,
@@ -247,6 +396,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     paddingVertical: 4,
     fontSize: 15,
+    color: '#000',
   },
   footerBar: {
     flexDirection: 'row',
@@ -293,9 +443,13 @@ const styles = StyleSheet.create({
     padding: 10,
     maxWidth: '70%',
   },
-  text: { color: '#fff' },
+  text: {
+    color: '#fff',
+    fontSize: 16,
+  },
   textYou: {
     color: '#224262',
+    fontSize: 16,
   },
   image: {
     width: 200,
@@ -326,6 +480,30 @@ const styles = StyleSheet.create({
     width: '90%',
     height: '80%',
   },
+  emojiBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  emoji: {
+    fontSize: 22,
+    marginHorizontal: 5,
+  },
+  reactionRow: {
+    flexDirection: 'row',
+    marginTop: 4,
+    paddingHorizontal: 10,
+  },
+  reactionEmoji: {
+    fontSize: 10,
+    marginRight: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    backgroundColor: '#f1f1f1',
+  },
+
 });
 
 export default DirectChatBox;

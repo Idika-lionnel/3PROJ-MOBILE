@@ -22,14 +22,10 @@ const upload = multer({ storage });
 // 📤 Route POST pour envoyer un fichier
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Aucun fichier reçu' });
-    }
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
 
     const { senderId, receiverId, type } = req.body;
-    if (!senderId || !receiverId) {
-      return res.status(400).json({ error: 'Champs senderId ou receiverId manquants' });
-    }
+    if (!senderId || !receiverId) return res.status(400).json({ error: 'Champs manquants' });
 
     const newMsg = await Message.create({
       senderId,
@@ -40,7 +36,6 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       read: false,
     });
 
-    // ✅ Émettre le message en temps réel via socket.io
     const io = req.app.get('io');
     io.to(receiverId).emit('new_direct_message', newMsg);
     io.to(senderId).emit('new_direct_message', newMsg);
@@ -48,7 +43,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     res.status(200).json(newMsg);
   } catch (err) {
     console.error('❌ Erreur upload fichier :', err);
-    res.status(500).json({ error: 'Erreur enregistrement fichier' });
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -71,10 +66,9 @@ router.get('/:receiverId', async (req, res) => {
   }
 });
 
-// ✅ Marquer tous les messages reçus comme lus dans une conversation
+// ✅ Marquer les messages reçus comme lus
 router.patch('/read/:senderId/:receiverId', async (req, res) => {
   const { senderId, receiverId } = req.params;
-
   try {
     await Message.updateMany(
       { senderId, receiverId, read: false },
@@ -82,7 +76,63 @@ router.patch('/read/:senderId/:receiverId', async (req, res) => {
     );
     res.status(200).json({ message: 'Messages marqués comme lus' });
   } catch (err) {
-    console.error('Erreur mise à jour messages lus :', err);
+    console.error('Erreur marquage lus :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// ✅ Ajouter une réaction
+router.post('/reaction/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+  const { userId, emoji } = req.body;
+
+  if (!userId || !emoji) return res.status(400).json({ error: 'userId et emoji requis' });
+
+  try {
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ error: 'Message non trouvé' });
+
+    const existing = msg.reactions.find(r => r.userId.toString() === userId);
+    if (existing) {
+      existing.emoji = emoji; // remplace la réaction
+    } else {
+      msg.reactions.push({ userId, emoji });
+    }
+
+    await msg.save();
+
+    const io = req.app.get('io');
+    io.to(msg.receiverId.toString()).emit('reaction_updated', { messageId, userId, emoji });
+    io.to(msg.senderId.toString()).emit('reaction_updated', { messageId, userId, emoji });
+
+    res.json({ message: 'Réaction ajoutée/modifiée' });
+  } catch (err) {
+    console.error('Erreur ajout réaction :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// ❌ Supprimer sa réaction
+router.delete('/reaction/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+  const { userId } = req.body;
+
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+
+  try {
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ error: 'Message non trouvé' });
+
+    msg.reactions = msg.reactions.filter(r => r.userId.toString() !== userId);
+    await msg.save();
+
+    const io = req.app.get('io');
+    io.to(msg.receiverId.toString()).emit('reaction_removed', { messageId, userId });
+    io.to(msg.senderId.toString()).emit('reaction_removed', { messageId, userId });
+
+    res.json({ message: 'Réaction supprimée' });
+  } catch (err) {
+    console.error('Erreur suppression réaction :', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
