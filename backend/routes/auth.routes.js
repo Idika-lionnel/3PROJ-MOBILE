@@ -4,8 +4,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const User = require('../models/User');
+const authMiddleware = require('../middleware/authMiddleware.js'); 
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Utilitaire : générer un token JWT
+// 🔧 Générer un token JWT
 const generateToken = (user) => {
   return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 };
@@ -13,11 +16,9 @@ const generateToken = (user) => {
 // 📥 Inscription
 router.post('/register', async (req, res) => {
   const { email, prenom, nom, password } = req.body;
-
   if (!email || !prenom || !nom || !password) {
     return res.status(400).json({ error: 'Champs requis manquants' });
   }
-
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'Email déjà utilisé' });
@@ -50,7 +51,6 @@ router.post('/register', async (req, res) => {
 // 🔑 Connexion classique
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Identifiants invalides' });
@@ -76,7 +76,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 🌐 Google OAuth2 (web et mobile)
+// 🌐 Google OAuth2 (web)
 router.get('/google', (req, res, next) => {
   const redirect_uri = req.query.redirect_uri;
   const state = Buffer.from(JSON.stringify({ redirect_uri })).toString('base64');
@@ -91,17 +91,15 @@ router.get('/google/callback',
   (req, res) => {
     const user = req.user;
     const token = generateToken(user);
-
     const state = req.query.state
       ? JSON.parse(Buffer.from(req.query.state, 'base64').toString())
       : {};
     const redirect_uri = state.redirect_uri || 'http://localhost:3000/login';
-
     res.redirect(`${redirect_uri}?token=${token}`);
   }
 );
 
-// 🐙 GitHub OAuth2 (web et mobile)
+// 🐙 GitHub OAuth2 (web)
 router.get('/github', (req, res, next) => {
   const redirect_uri = req.query.redirect_uri;
   const state = Buffer.from(JSON.stringify({ redirect_uri })).toString('base64');
@@ -116,40 +114,20 @@ router.get('/github/callback',
   (req, res) => {
     const user = req.user;
     const token = generateToken(user);
-
     const state = req.query.state
       ? JSON.parse(Buffer.from(req.query.state, 'base64').toString())
       : {};
     const redirect_uri = state.redirect_uri || 'http://localhost:3000/login';
-
     res.redirect(`${redirect_uri}?token=${token}`);
   }
 );
 
-// 👤 Récupération de l'utilisateur connecté
-router.get('/me', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token manquant' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-
-    res.json({ user });
-  } catch (err) {
-    res.status(401).json({ error: 'Token invalide' });
-  }
+// 👤 Récupération de l'utilisateur connecté (sécurisé)
+router.get('/me', authMiddleware, async (req, res) => {
+  res.json({ user: req.user });
 });
 
 // 📱 Connexion mobile via Google
-const { OAuth2Client } = require('google-auth-library');
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
 router.get('/google/mobile', async (req, res) => {
   const accessToken = req.query.access_token;
   if (!accessToken) {
@@ -157,7 +135,6 @@ router.get('/google/mobile', async (req, res) => {
   }
 
   try {
-    // Vérifie le token d’accès Google
     const ticket = await googleClient.getTokenInfo(accessToken);
     const email = ticket.email;
 
@@ -165,14 +142,13 @@ router.get('/google/mobile', async (req, res) => {
       return res.status(400).json({ error: 'Email non trouvé dans le token' });
     }
 
-    // Recherche ou création de l’utilisateur
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({
         email,
         prenom: 'Google',
         nom: 'User',
-        password: '', // Pas nécessaire pour OAuth
+        password: '',
         role: 'membre',
       });
     }
@@ -185,4 +161,5 @@ router.get('/google/mobile', async (req, res) => {
     res.status(500).json({ error: 'Erreur authentification Google' });
   }
 });
+
 module.exports = router;
