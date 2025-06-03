@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { API_URL } from '../config';
-
-//const API_URL = 'http://192.168.30.125:5050';
 
 const WorkspaceDetailScreen = () => {
   const { params } = useRoute();
@@ -25,34 +23,35 @@ const WorkspaceDetailScreen = () => {
   const workspaceId = params?.id;
   const isOwner = workspace?.createdBy?._id === user._id;
 
+  // --- fetchData rendu réutilisable
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/workspaces/${workspaceId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setWorkspace(res.data);
+      setEditData({
+        name: res.data.name,
+        description: res.data.description || '',
+        isPrivate: res.data.isPrivate || false,
+      });
+    } catch {
+      setError('Erreur chargement workspace');
+    }
+  };
+
+  const fetchChannels = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/workspaces/${workspaceId}/channels`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setChannels(res.data);
+    } catch (err) {
+      console.error('Erreur chargement canaux', err);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/workspaces/${workspaceId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setWorkspace(res.data);
-        setEditData({
-          name: res.data.name,
-          description: res.data.description || '',
-          isPrivate: res.data.isPrivate || false,
-        });
-      } catch {
-        setError('Erreur chargement workspace');
-      }
-    };
-
-    const fetchChannels = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/workspaces/${workspaceId}/channels`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setChannels(res.data);
-      } catch (err) {
-        console.error('Erreur chargement canaux', err);
-      }
-    };
-
     if (workspaceId && token) {
       fetchData();
       fetchChannels();
@@ -98,13 +97,14 @@ const WorkspaceDetailScreen = () => {
   const handleAddMember = async () => {
     if (!newMemberEmail.trim()) return;
     try {
-      const res = await axios.post(`${API_URL}/api/workspaces/${workspaceId}/members-by-email`, {
+      await axios.post(`${API_URL}/api/workspaces/${workspaceId}/members-by-email`, {
         email: newMemberEmail,
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setWorkspace(res.data);
       setNewMemberEmail('');
+      await fetchData(); // ✅ rafraîchissement de la liste des membres
+      Alert.alert('Succès', 'Membre ajouté');
     } catch {
       Alert.alert('Erreur', 'Échec ajout membre.');
     }

@@ -135,6 +135,6 @@ router.get('/:id/members', requireAuth, async (req, res) => {
 
 // ✅ Montage des routes channels
 const channelRoutes = require('./channel.routes');
-router.use('/:workspaceId/channels', channelRoutes); 
+router.use('/:workspaceId/channels', channelRoutes);
 
 module.exports = router;
