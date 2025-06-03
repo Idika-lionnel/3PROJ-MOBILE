@@ -99,12 +99,29 @@ io.on('connection', (socket) => {
   console.log('✅ Client connecté via Socket.io');
 
 
+   // ✅ Ajout d'un membre au canal
+   socket.on('channel_member_added', ({ channelId, member }) => {
+     io.to(channelId).emit('channel_member_added', { channelId, member });
+   });
+
+   // ✅ Suppression d’un membre
+   socket.on('channel_member_removed', ({ channelId, userId }) => {
+     io.to(channelId).emit('channel_member_removed', { channelId, userId });
+   });
+
 
   // ✅ Rejoindre sa room perso
   socket.on('join', (userId) => {
     if (userId) {
       socket.join(userId);
       console.log(`🟢 L'utilisateur ${userId} a rejoint sa room`);
+    }
+  });
+  // ✅ Rejoindre un workspace
+  socket.on('join_workspace', (workspaceId) => {
+    if (workspaceId) {
+      socket.join(workspaceId);
+      console.log(`🏢 Socket rejoint le workspace ${workspaceId}`);
     }
   });
 

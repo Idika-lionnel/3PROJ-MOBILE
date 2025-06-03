@@ -12,6 +12,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '../components/channelChatStyles';
 import { useNavigation } from '@react-navigation/native';
+import { socket } from '../socket'
 
 
 const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
@@ -64,6 +65,36 @@ const ChannelChatScreen = () => {
       fetchChannel();
     }
   }, [channelId]);
+
+  useEffect(() => {
+    if (!socket || !channelId) return;
+
+
+    // 1. Rejoindre la room du canal
+    socket.emit('join_channel', channelId);
+    // 🔁 Rejoint la room perso pour recevoir les expulsions
+    socket.emit('join', user._id);
+
+    // 2. Écouter l’événement de retrait
+    const handleKick = ({ channelId: removedChannelId }) => {
+      if (removedChannelId === channelId) {
+        Alert.alert(
+          '⛔ Accès retiré',
+          'Vous avez été retiré de ce canal.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
+    };
+
+    // 3. Enregistrement de l'écouteur
+    socket.on('removed_from_channel', handleKick);
+
+    // 4. Nettoyage
+    return () => {
+      socket.off('removed_from_channel', handleKick);
+    };
+  }, [channelId]);
+
 
   const handleSend = async () => {
     if (!input.trim()) return;

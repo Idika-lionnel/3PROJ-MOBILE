@@ -5,14 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6f1cc44e-4fb3-4306-a97b-41bb208cd5e6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/mobile/screens/ChannelDetailScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/models/Channel.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/Channel.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/channel.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/channel.routes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/workspace.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/workspace.routes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/App.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile/screens/ChannelChatScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/ChannelChatScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/CreateChannelScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/CreateChannelScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/ChannelDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/ChannelDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/WorkspaceDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/WorkspaceDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/WorkspacesScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/WorkspacesScreen.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

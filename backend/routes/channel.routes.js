@@ -296,6 +296,15 @@ router.delete('/:channelId/members/:userId', requireAuth, async (req, res) => {
 
     channel.members = channel.members.filter(id => id.toString() !== userId);
     await channel.save();
+    const io = req.app.get('io');
+    io.to(channel._id.toString()).emit('channel_member_removed', {
+      channelId: channel._id.toString(),
+      userId, // identifiant du membre retiré
+    });
+    // Notifie uniquement l'utilisateur retiré
+    io.to(userId).emit('removed_from_channel', {
+      channelId: channel._id.toString(),
+    });
 
     res.status(200).json({ message: 'Membre supprimé avec succès' });
   } catch (err) {
@@ -318,6 +327,7 @@ router.delete('/reaction/:messageId', requireAuth, async (req, res) => {
     message.reactions = message.reactions.filter(r => r.userId.toString() !== userId.toString());
     await message.save();
 
+
     const io = req.app.get('io');
     io.to(message.channel.toString()).emit('channel_reaction_removed', {
       messageId,
@@ -325,6 +335,7 @@ router.delete('/reaction/:messageId', requireAuth, async (req, res) => {
       channelId: message.channel.toString()
     });
 
+    io.to(userId).emit('removed_from_channel', { channelId });
     res.status(200).json({ message: 'Réaction supprimée' });
   } catch (err) {
     console.error('❌ Erreur suppression réaction canal :', err);

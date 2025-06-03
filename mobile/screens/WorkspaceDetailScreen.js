@@ -5,6 +5,8 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { API_URL } from '../config';
+import { socket } from '../socket';
+
 
 const WorkspaceDetailScreen = () => {
   const { params } = useRoute();
@@ -19,9 +21,14 @@ const WorkspaceDetailScreen = () => {
   const [editData, setEditData] = useState({ name: '', description: '', isPrivate: false });
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [error, setError] = useState('');
-
+  const isMember = workspace?.members.some(m => m._id === user._id);
   const workspaceId = params?.id;
-  const isOwner = workspace?.createdBy?._id === user._id;
+  const isOwner =
+    workspace?.createdBy &&
+    (typeof workspace.createdBy === 'string'
+      ? workspace.createdBy === user._id
+      : workspace.createdBy._id === user._id);
+
 
   // --- fetchData rendu réutilisable
   const fetchData = async () => {
@@ -57,6 +64,51 @@ const WorkspaceDetailScreen = () => {
       fetchChannels();
     }
   }, [workspaceId, token]);
+
+  useEffect(() => {
+    if (!socket || !workspaceId) return;
+
+    // Rejoindre la room du workspace
+    socket.emit('join_workspace', workspaceId);
+    socket.emit('join', user._id);
+
+    const handleMemberAdded = ({ workspaceId: wid, member }) => {
+      if (wid === workspaceId) {
+        setWorkspace((prev) => ({
+          ...prev,
+          members: [...prev.members, member],
+        }));
+      }
+    };
+    socket.on('workspace_member_removed', handleKick);
+    const handleMemberRemoved = ({ workspaceId: wid, userId }) => {
+      if (wid === workspaceId) {
+        // Si c’est l’utilisateur connecté qui est retiré, il doit être éjecté de la page
+        if (userId === user._id) {
+          Alert.alert(
+            '⛔ Accès retiré',
+            'Vous avez été retiré de ce workspace.',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        } else {
+          // Sinon, mettre à jour la liste des membres normalement
+          setWorkspace((prev) => ({
+            ...prev,
+            members: prev.members.filter((u) => u._id !== userId),
+          }));
+        }
+      }
+    };
+
+    socket.on('workspace_member_added', handleMemberAdded);
+    socket.on('workspace_member_removed', handleMemberRemoved);
+
+    return () => {
+      socket.off('workspace_member_added', handleMemberAdded);
+      socket.off('workspace_member_removed', handleMemberRemoved);
+    };
+  }, [workspaceId, user._id]);
+
 
   const handleChannelCreated = (newChannel) => {
     setChannels((prev) => [...prev, newChannel]);
@@ -120,6 +172,20 @@ const WorkspaceDetailScreen = () => {
       Alert.alert('Erreur', 'Impossible de retirer ce membre.');
     }
   };
+  const handleJoinWorkspace = async () => {
+    try {
+      await axios.post(`${API_URL}/api/workspaces/${workspaceId}/join`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      Alert.alert("Succès", "Vous avez rejoint ce workspace.");
+      fetchData(); // recharge les membres + canaux
+    } catch (err) {
+      Alert.alert(
+        "Erreur",
+        err?.response?.data?.error || "Impossible de rejoindre ce workspace."
+      );
+    }
+  };
 
   if (!workspace) return <Text style={{ padding: 20, color: 'red' }}>{error || 'Chargement...'}</Text>;
 
@@ -163,6 +229,21 @@ const WorkspaceDetailScreen = () => {
           <Text style={styles.title}>{workspace.name}</Text>
           <Text style={styles.info}>{workspace.description || 'Aucune description'}</Text>
           <Text style={styles.info}>Visibilité : {workspace.isPrivate ? 'Privé' : 'Public'}</Text>
+          {!workspace.isPrivate && !isMember && (
+            <TouchableOpacity
+              onPress={handleJoinWorkspace}
+              style={{
+                backgroundColor: '#22c55e',
+                padding: 12,
+                borderRadius: 8,
+                marginTop: 10,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>🔓 Rejoindre ce workspace</Text>
+            </TouchableOpacity>
+          )}
+
         </>
       )}
 

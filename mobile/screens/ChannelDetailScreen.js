@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { API_URL } from '../config';
 import { Ionicons } from '@expo/vector-icons';
+import { socket } from '../socket';
 
 const ChannelDetailScreen = () => {
   const { params } = useRoute();
@@ -46,7 +47,7 @@ const ChannelDetailScreen = () => {
         ...prev,
         members: [...prev.members, res.data],
       }));
-      socket.current.emit('channel_member_added', {
+      socket.emit('channel_member_added', {
         channelId,
         member: res.data,
       });
@@ -67,7 +68,7 @@ const ChannelDetailScreen = () => {
         ...prev,
         members: prev.members.filter((u) => u._id !== userId),
       }));
-      socket.current.emit('channel_member_removed', {
+      socket.emit('channel_member_removed', {
         channelId,
         userId,
       });
