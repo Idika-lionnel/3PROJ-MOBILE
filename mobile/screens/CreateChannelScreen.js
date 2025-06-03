@@ -19,6 +19,8 @@ const CreateChannelScreen = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const styles = createStyles(dark);
+  const [isPrivate, setIsPrivate] = useState(false);
+
 
   const handleCreateChannel = async () => {
     if (!name.trim()) return Alert.alert('Erreur', 'Le nom du canal est requis');
@@ -26,7 +28,7 @@ const CreateChannelScreen = () => {
     try {
       const res = await axios.post(
         `${API_URL}/api/workspaces/${workspaceId}/channels`,
-        { name, description },
+        { name, description, isPrivate},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -60,6 +62,14 @@ const CreateChannelScreen = () => {
         value={description}
         onChangeText={setDescription}
       />
+      <View style={styles.switchContainer}>
+        <Text style={[styles.switchLabel, { color: dark ? '#fff' : '#111' }]}>
+          {isPrivate ? 'Canal privé' : 'Canal public'}
+        </Text>
+        <TouchableOpacity onPress={() => setIsPrivate(!isPrivate)} style={styles.switchBox}>
+          <View style={[styles.switchToggle, isPrivate && styles.switchToggleActive]} />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity onPress={handleCreateChannel} style={styles.button}>
         <Text style={styles.buttonText}>Créer</Text>
@@ -100,6 +110,34 @@ const createStyles = (dark) =>
     buttonText: {
       color: '#fff',
       fontWeight: '600',
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 20,
+    },
+    switchLabel: {
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    switchBox: {
+      width: 50,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: '#ccc',
+      justifyContent: 'center',
+    },
+    switchToggle: {
+      width: 20,
+      height: 20,
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      marginLeft: 4,
+    },
+    switchToggleActive: {
+      marginLeft: 26,
+      backgroundColor: '#2563eb',
     },
   });
 

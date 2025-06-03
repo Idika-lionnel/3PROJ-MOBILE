@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -16,6 +15,7 @@ const userRoutes = require('./routes/user.routes');
 const conversationRoutes = require('./routes/conversation.routes');
 const messageRoutes = require('./routes/message.routes');
 const workspaceRoutes = require('./routes/workspace.routes');
+const channelRoutes = require('./routes/channel.routes');
 
 // 🚀 App init
 const app = express();
@@ -44,6 +44,7 @@ app.use('/users', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/channels', channelRoutes);
 
 // 🛢️ MongoDB
 mongoose
@@ -63,7 +64,8 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   },
 });
-//fonction updateConversation
+
+// 📌 Fonction pour mettre à jour la conversation
 async function updateConversation(senderId, receiverId, lastMsg) {
   let conv = await Conversation.findOne({
     participants: { $all: [senderId, receiverId], $size: 2 }
@@ -92,26 +94,32 @@ async function updateConversation(senderId, receiverId, lastMsg) {
   }
 }
 
-
-// 💬 Socket.io
 // 💬 Socket.io
 io.on('connection', (socket) => {
   console.log('✅ Client connecté via Socket.io');
 
+
+
+  // ✅ Rejoindre sa room perso
   socket.on('join', (userId) => {
     if (userId) {
       socket.join(userId);
       console.log(`🟢 L'utilisateur ${userId} a rejoint sa room`);
-    } else {
-      console.warn('⚠️ userId non fourni dans "join"');
     }
   });
 
+  // ✅ Rejoindre un canal
+  socket.on('join_channel', (channelId) => {
+    if (channelId) {
+      socket.join(channelId);
+      console.log(`📡 Socket rejoint le canal ${channelId}`);
+    }
+  });
+
+  // ✅ Message direct
   socket.on('direct_message', async (msg) => {
     try {
-      if (!msg.senderId || !msg.receiverId) {
-        return console.warn('❌ senderId ou receiverId manquant dans le message');
-      }
+      if (!msg.senderId || !msg.receiverId) return console.warn('❌ senderId ou receiverId manquant');
 
       if (msg.attachmentUrl && msg.type === 'file') {
         await updateConversation(
@@ -138,22 +146,32 @@ io.on('connection', (socket) => {
       await updateConversation(msg.senderId, msg.receiverId, msg.message);
       io.to(msg.receiverId).emit('new_direct_message', savedMessage);
       io.to(msg.senderId).emit('new_direct_message', savedMessage);
-      console.log(`📤 Message ${savedMessage.type} envoyé à ${msg.receiverId}`);
+      console.log(`📤 Message direct ${savedMessage.type} envoyé à ${msg.receiverId}`);
     } catch (err) {
-      console.error('❌ Erreur enregistrement message direct :', err);
+      console.error('❌ Erreur direct_message :', err);
     }
   });
 
-  // ✅ Réaction ajoutée ou modifiée
+  // ✅ Réactions directes
   socket.on('reaction_updated', ({ messageId, userId, emoji }) => {
-    console.log(`🔄 Réaction ajoutée/maj pour message ${messageId} par ${userId}`);
+    console.log(`🔄 Réaction MAJ sur message ${messageId} par ${userId}`);
     io.emit('reaction_updated', { messageId, userId, emoji });
   });
 
-  // ✅ Réaction supprimée
   socket.on('reaction_removed', ({ messageId, userId }) => {
-    console.log(`❌ Réaction retirée pour message ${messageId} par ${userId}`);
+    console.log(`❌ Réaction supprimée sur message ${messageId} par ${userId}`);
     io.emit('reaction_removed', { messageId, userId });
+  });
+
+  // ✅ Réactions dans canaux
+  socket.on('channel_reaction_updated', ({ messageId, userId, emoji, channelId }) => {
+    console.log(`🔄 Réaction canal ${channelId} sur message ${messageId} par ${userId}`);
+    io.to(channelId).emit('channel_reaction_updated', { messageId, userId, emoji });
+  });
+
+  socket.on('channel_reaction_removed', ({ messageId, userId, channelId }) => {
+    console.log(`❌ Réaction supprimée dans canal ${channelId} sur message ${messageId} par ${userId}`);
+    io.to(channelId).emit('channel_reaction_removed', { messageId, userId });
   });
 
   socket.on('disconnect', () => {
@@ -161,7 +179,9 @@ io.on('connection', (socket) => {
   });
 });
 
+// 👂 Attacher io à l'app
 app.set('io', io);
+
 // 🚀 Lancement
 server.listen(PORT, () => {
   console.log(`🌐 Serveur démarré sur http://localhost:${PORT}`);

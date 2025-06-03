@@ -15,6 +15,7 @@ import WorkspaceDetailScreen from './screens/WorkspaceDetailScreen';
 import CreateChannelScreen from './screens/CreateChannelScreen';
 import ChannelChatScreen from './screens/ChannelChatScreen';
 import { ActivityIndicator, View } from 'react-native';
+import ChannelDetailScreen from './screens/ChannelDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,7 @@ function AppNavigator() {
           <Stack.Screen name="WorkspaceDetail" component={WorkspaceDetailScreen} /> 
           <Stack.Screen name="CreateChannel" component={CreateChannelScreen} />
           <Stack.Screen name="ChannelChat" component={ChannelChatScreen} />
+          <Stack.Screen name="ChannelDetail" component={ChannelDetailScreen} options={{ title: 'Détails du canal' }} />
           </>
         ) : (
           <>
