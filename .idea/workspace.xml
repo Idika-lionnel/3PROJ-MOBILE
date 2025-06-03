@@ -5,94 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6f1cc44e-4fb3-4306-a97b-41bb208cd5e6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/models/ChannelMessage.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile/components/channelChatStyles.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile/components/emojiOptions.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mobile/screens/ChannelDetailScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/Channel.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/Channel.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/channel.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/channel.routes.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/routes/workspace.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/workspace.routes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748606636666-228686333.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748607035637-774077224.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748607059311-252744643.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748608035197-986140018.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748608712168-214128011.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748608717418-639801909.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748609332980-443305360.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748609338188-108527993.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748609386988-131183302.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748681022629-560953301.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748681738306-53848045.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748681768824-575412162.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748682155631-609279516.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748684122584-863181124.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748684125326-559970047.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748684320527-33622903.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748684323302-526379228.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748785897209-192096969.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748785908991-138329966.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748786397959-186542540.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748786401662-438654362.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748787188075-147732534.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748787427895-923495973.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748787430625-494009109.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748787433147-234626017.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748787934963-628778738.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748787937346-262914119.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748789151722-555828107.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748790066617-965839234.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748790069897-853870158.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748791007021-242674608.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748791026346-472366802.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748791029816-458233381.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748791088981-801544041.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748791300562-950215852.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748792313171-701061109.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748792317489-553701578.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748792790609-678413719.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748793203210-234985147.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748793649027-137622948.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748793823541-837827531.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748794563896-215115042.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748794567051-960008988.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748797347125-710737051.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748797358210-615232218.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748797818011-780829639.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748797823765-440071877.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748799465784-331084637.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748799469263-16109461.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748799475300-833066883.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748800965204-659057266.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748800976762-740853688.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748801089666-183935312.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748801773406-169684616.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748805132003-388252963.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748805143646-590064233.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748805543423-36322831.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748805555584-743584648.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748805787448-161737635.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748805797463-592814565.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809013965-90169628.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809330011-758202703.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809394571-561331570.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809399672-902387147.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809420864-723100045.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809423174-925855720.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809438882-938173847.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809449869-165845301.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809453049-83437897.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748809468818-499745757.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748856362503-62105861.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748856367950-480726260.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748856947712-772281133.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748857097939-606814521.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748859944783-431927584.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uploads/1748859948268-786284713.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/app.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/App.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile/screens/ChannelChatScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/ChannelChatScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/WorkspaceDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/WorkspaceDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/CreateChannelScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/CreateChannelScreen.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

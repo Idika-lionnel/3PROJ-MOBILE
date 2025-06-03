@@ -98,6 +98,8 @@ async function updateConversation(senderId, receiverId, lastMsg) {
 io.on('connection', (socket) => {
   console.log('✅ Client connecté via Socket.io');
 
+
+
   // ✅ Rejoindre sa room perso
   socket.on('join', (userId) => {
     if (userId) {

@@ -11,6 +11,7 @@ import { API_URL } from '../config';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '../components/channelChatStyles';
+import { useNavigation } from '@react-navigation/native';
 
 
 const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
@@ -20,6 +21,7 @@ const ChannelChatScreen = () => {
   const { channelId } = params;
   const { token, user } = useContext(AuthContext);
   const { dark } = useContext(ThemeContext);
+  const navigation = useNavigation();
   const styles = createStyles(dark);
   const flatListRef = useRef();
 
@@ -191,7 +193,6 @@ const ChannelChatScreen = () => {
 
         {showReactionsFor === item._id && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4 }}>
-            {/* Croisement direct */}
             <TouchableOpacity
               onPress={async () => {
                 try {
@@ -207,21 +208,22 @@ const ChannelChatScreen = () => {
                   });
                   setMessages(res.data);
                 } catch (err) {
-                  console.error('Erreur suppression réaction via ❌ :', err.response?.data || err.message);
+                  console.error('Erreur suppression réaction via croix :', err.response?.data || err.message);
                 } finally {
                   setShowReactionsFor(null);
                 }
               }}
-              style={{ marginHorizontal: 6 }}
+              style={{ marginHorizontal: 4 }}
             >
-              <Text style={{ fontSize: 20, color: 'red' }}>❌</Text>
+              <Ionicons name="close-circle-outline" size={18} color="#888" />
             </TouchableOpacity>
+
 
             {emojiOptions.map((emoji) => (
               <TouchableOpacity
                 key={emoji}
                 onPress={() => {
-                  toggleReaction(item._id, null, emoji); // 👈 garde ce format si tu veux conserver currentReaction
+                  toggleReaction(item._id, null, emoji);
                   setShowReactionsFor(null);
                 }}
               >
@@ -231,12 +233,6 @@ const ChannelChatScreen = () => {
           </View>
         )}
 
-              >
-                <Text style={{ fontSize: 22, marginHorizontal: 4 }}>{emoji}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
       </View>
     );
   };
@@ -252,7 +248,10 @@ const filteredMessages = messages.filter(msg =>
       keyboardVerticalOffset={90}
     >
       <View style={styles.headerRow}>
-        <Text style={styles.channelTitle}>#{channelName}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('ChannelDetail', { channelId })}>
+          <Text style={styles.channelTitle}>#{channelName}</Text>
+        </TouchableOpacity>
+
 
         {showSearchInput && (
           <TextInput

@@ -4,6 +4,8 @@ const Channel = require('../models/Channel');
 const Workspace = require('../models/Workspace');
 const ChannelMessage = require('../models/ChannelMessage');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
 
 // 📦 Pour upload de fichiers
 const multer = require('multer');
@@ -240,6 +242,68 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
+//route invitation channels
+router.post('/:id/invite', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { email } = req.body;
+  const userId = req.user._id;
+
+  try {
+    console.log('🔔 Invitation reçue pour', email);
+
+    const channel = await Channel.findById(id);
+    if (!channel) return res.status(404).json({ error: 'Canal non trouvé' });
+
+    // Vérifie bien que channel.createdBy existe
+    if (!channel.createdBy || channel.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Non autorisé' });
+    }
+
+    const invitedUser = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!invitedUser) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    if (channel.members.includes(invitedUser._id)) {
+      return res.status(400).json({ error: 'Déjà membre' });
+    }
+
+    channel.members.push(invitedUser._id);
+    await channel.save();
+
+    res.status(200).json(invitedUser);
+  } catch (err) {
+    console.error('❌ ERREUR DANS INVITE CHANNEL :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+router.delete('/:channelId/members/:userId', requireAuth, async (req, res) => {
+  const { channelId, userId } = req.params;
+  const currentUserId = req.user._id;
+
+  try {
+    const channel = await Channel.findById(channelId);
+    if (!channel) return res.status(404).json({ error: 'Canal non trouvé' });
+
+    // Vérifie que seul le créateur peut supprimer
+    if (channel.createdBy.toString() !== currentUserId.toString()) {
+      return res.status(403).json({ error: 'Action non autorisée' });
+    }
+
+    // Ne pas retirer le créateur lui-même
+    if (userId === currentUserId.toString()) {
+      return res.status(400).json({ error: 'Le créateur ne peut pas se retirer lui-même' });
+    }
+
+    channel.members = channel.members.filter(id => id.toString() !== userId);
+    await channel.save();
+
+    res.status(200).json({ message: 'Membre supprimé avec succès' });
+  } catch (err) {
+    console.error('❌ Erreur suppression membre :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 
 
 // ❌ Supprimer une réaction dans un canal
