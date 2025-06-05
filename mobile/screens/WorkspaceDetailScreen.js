@@ -61,9 +61,15 @@ const WorkspaceDetailScreen = () => {
   useEffect(() => {
     if (workspaceId && token) {
       fetchData();
-      fetchChannels();
     }
   }, [workspaceId, token]);
+
+  useEffect(() => {
+    if (workspace && workspace.members.some(m => m._id === user._id)) {
+      fetchChannels();
+    }
+  }, [workspace]);
+
 
   useEffect(() => {
     if (!socket || !workspaceId) return;

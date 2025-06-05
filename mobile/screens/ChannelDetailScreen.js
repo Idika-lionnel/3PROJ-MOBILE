@@ -17,6 +17,9 @@ const ChannelDetailScreen = () => {
   const { dark } = useContext(ThemeContext);
   const [channel, setChannel] = useState(null);
   const [email, setEmail] = useState('');
+  const [isCreator, setIsCreator] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+
 
   useEffect(() => {
     const fetchChannel = async () => {
@@ -33,30 +36,37 @@ const ChannelDetailScreen = () => {
     fetchChannel();
   }, [channelId]);
 
-  const handleInvite = async () => {
-    if (!email.trim()) return;
-    try {
-      const res = await axios.post(`${API_URL}/api/channels/${channelId}/invite`, {
-        email: email.trim().toLowerCase(),
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      Alert.alert('✅ Invitation envoyée', `${email} a été ajouté`);
-      setEmail('');
-      setChannel((prev) => ({
-        ...prev,
-        members: [...prev.members, res.data],
-      }));
-      socket.emit('channel_member_added', {
-        channelId,
-        member: res.data,
-      });
-    } catch (err) {
-      console.log('Erreur invitation :', err.response?.data || err.message); // 👈 plus de bannière rouge
-      Alert.alert('Erreur', err.response?.data?.error || 'Échec de l’invitation');
-    }
+ const handleInvite = async () => {
+   if (!email.trim()) return;
 
-  };
+   try {
+     const res = await axios.post(`${API_URL}/api/channels/${channelId}/invite`, {
+       email: email.trim().toLowerCase(),
+     }, {
+       headers: { Authorization: `Bearer ${token}` },
+     });
+
+     // ✅ Succès : on arrête ici
+     Alert.alert('✅ Invitation envoyée', `${email} a été ajouté`);
+     setEmail('');
+     setChannel((prev) => ({
+       ...prev,
+       members: [...prev.members, res.data],
+     }));
+
+     if (socket && socket.emit) {
+       socket.emit('channel_member_added', {
+         channelId,
+         member: res.data,
+       });
+     }
+
+     return; // <-- 🛑 Arrête ici
+   } catch (err) {
+     console.log('Erreur invitation :', err.response?.data || err.message);
+     Alert.alert('Erreur', err.response?.data?.error || 'Échec de l’invitation');
+   }
+ };
 
   const handleRemove = async (userId) => {
     try {
@@ -68,10 +78,12 @@ const ChannelDetailScreen = () => {
         ...prev,
         members: prev.members.filter((u) => u._id !== userId),
       }));
-      socket.emit('channel_member_removed', {
-        channelId,
-        userId,
-      });
+      if (socket && socket.emit) {
+        socket.emit('channel_member_removed', {
+          channelId,
+          userId,
+        });
+      }
 
 
     } catch (err) {
@@ -92,7 +104,7 @@ const ChannelDetailScreen = () => {
             <Text style={[styles.memberText, { color: dark ? '#eee' : '#111' }]}>
               {item.prenom} {item.nom}
             </Text>
-            {channel?.createdBy === user._id && item._id !== user._id && (
+            {channel?.isCreator && item._id !== user._id && (
               <TouchableOpacity onPress={() => handleRemove(item._id)}>
                 <Ionicons name="close" size={22} color="red" />
               </TouchableOpacity>
@@ -101,7 +113,7 @@ const ChannelDetailScreen = () => {
         )}
       />
 
-      {channel?.createdBy === user._id && (
+      {channel?.isCreator && (
         <View style={styles.inviteBox}>
           <TextInput
             style={[

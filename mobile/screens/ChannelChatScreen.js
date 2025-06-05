@@ -35,6 +35,8 @@ const ChannelChatScreen = () => {
   const [reactionDetail, setReactionDetail] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
 
   useEffect(() => {
@@ -55,6 +57,9 @@ const ChannelChatScreen = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setChannelName(res.data.name);
+        setIsCreator(res.data.isCreator || false); // <-- ajouter ceci
+        setIsMember(res.data.isMember || false);
+        setChannel(res.data);
       } catch (err) {
         console.error('Erreur chargement canal :', err.response?.data || err.message);
       }
@@ -310,23 +315,30 @@ const filteredMessages = messages.filter(msg =>
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      <View style={styles.footerBar}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            style={styles.inputWebStyle}
-            placeholder="Message..."
-            placeholderTextColor="#999"
-          />
+      {isMember ? (
+        <View style={styles.footerBar}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              style={styles.inputWebStyle}
+              placeholder="Message..."
+              placeholderTextColor="#999"
+            />
+          </View>
+          <TouchableOpacity onPress={handlePickFile}>
+            <Ionicons name="add" size={24} color="#999" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+            <Ionicons name="arrow-up" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handlePickFile}>
-          <Ionicons name="add" size={24} color="#999" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Ionicons name="arrow-up" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <View style={{ padding: 12, backgroundColor: '#f3f4f6', alignItems: 'center' }}>
+          <Text style={{ color: '#999' }}>Vous devez être membre de ce canal pour envoyer un message.</Text>
+        </View>
+      )}
+
 
       <Modal visible={isModalVisible} transparent>
         <TouchableOpacity
