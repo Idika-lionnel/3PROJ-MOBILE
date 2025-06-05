@@ -89,7 +89,8 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     // ✅ Vérifie si l'utilisateur est membre
-    if (!workspace.members.includes(req.user._id)) {
+    const isWorkspaceMember = workspace.members.map(id => id.toString()).includes(req.user._id.toString());
+    if (!isWorkspaceMember) {
       return res.status(403).json({ error: 'Accès refusé : non membre du workspace' });
     }
 
@@ -118,7 +119,10 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
     }
 
     const userId = req.user._id.toString();
-    const isChannelMember = channel.members.some(id => id.toString() === userId);
+    const isChannelMember = channel.members.some(member => {
+      const memberId = member._id ? member._id.toString() : member.toString();
+      return memberId === userId;
+    });
     const isCreator = channel.createdBy?._id?.toString() === userId;
 
     if (!isChannelMember && !isCreator) {
@@ -159,13 +163,26 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
 
     const userId = req.user._id.toString();
     const isWorkspaceMember = workspace.members.map(id => id.toString()).includes(userId);
-    const isChannelMember = channel.members.map(id => id.toString()).includes(userId);
+    const isChannelMember = channel.members.some(member => {
+      const memberId = member._id ? member._id.toString() : member.toString();
+      return memberId === userId;
+    });
+
     const isCreator = channel.createdBy?._id?.toString() === userId;
 
     // 🔒 Vérifie les droits d'accès
     if (!isWorkspaceMember) {
       return res.status(403).json({ error: 'Accès refusé (non membre du workspace)' });
     }
+    console.log('📦 DEBUG accès canal', {
+      channelId: channel._id.toString(),
+      canalName: channel.name,
+      isPrivate: channel.isPrivate,
+      userId: userId,
+      channelMembers: channel.members.map(id => id.toString()),
+      isChannelMember,
+      isCreator
+    });
 
     if (channel.isPrivate && !isChannelMember && !isCreator) {
       return res.status(403).json({ error: 'Accès refusé (canal privé)' });
@@ -246,20 +263,34 @@ router.get('/:id', requireAuth, async (req, res) => {
 
     const userId = req.user._id.toString();
     const isWorkspaceMember = workspace.members.map(id => id.toString()).includes(userId);
-    const isChannelMember = channel.members.map(id => id.toString()).includes(userId);
+    const isChannelMember = channel.members.some(member => {
+      const memberId = member._id ? member._id.toString() : member.toString();
+      return memberId === userId;
+    });
+
     const isCreator = channel.createdBy?._id?.toString() === userId;
 
     if (!isWorkspaceMember) {
       return res.status(403).json({ error: 'Accès interdit (non membre du workspace)' });
     }
-
+    console.log('📦 DEBUG accès canal', {
+      channelId: channel._id.toString(),
+      canalName: channel.name,
+      isPrivate: channel.isPrivate,
+      userId: userId,
+      channelMembers: channel.members.map(id => id.toString()),
+      isChannelMember,
+      isCreator
+    });
+    console.log("📦 DEBUG channel.members : ", channel.members.map(id => id.toString()));
+    console.log("👤 userId : ", userId);
     if (channel.isPrivate && !isChannelMember && !isCreator) {
       return res.status(403).json({ error: 'Accès interdit (canal privé)' });
     }
 
     res.status(200).json({
       ...channel.toObject(),
-      isMember: isChannelMember,
+      isMember: isChannelMember || isCreator,
       isCreator: isCreator,
     });
   } catch (err) {
@@ -283,7 +314,11 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
     const channel = await Channel.findById(message.channel);
     if (!channel) return res.status(404).json({ error: 'Canal non trouvé' });
 
-    const isMember = channel.members.map(id => id.toString()).includes(userId);
+    const isMember = channel.members.some(member => {
+      const memberId = member._id ? member._id.toString() : member.toString();
+      return memberId === userId;
+    });
+
     const isCreator = channel.createdBy?.toString() === userId;
 
     if (!isMember && !isCreator) {
@@ -294,6 +329,7 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
 
     if (existing) {
       if (existing.emoji === emoji) {
+        // Retirer la réaction
         message.reactions = message.reactions.filter(r => r.userId.toString() !== userId);
         await message.save();
 
@@ -306,6 +342,7 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
 
         return res.status(200).json({ message: 'Réaction supprimée' });
       } else {
+        // Modifier la réaction
         existing.emoji = emoji;
         await message.save();
 
@@ -320,6 +357,7 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
         return res.status(200).json({ message: 'Réaction modifiée' });
       }
     } else {
+      // Ajouter une réaction
       message.reactions.push({ userId, emoji });
       await message.save();
 
@@ -339,6 +377,7 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
   }
 });
 
+
 //route invitation channels
 router.post('/:id/invite', requireAuth, async (req, res) => {
   const { id } = req.params;
@@ -357,7 +396,7 @@ router.post('/:id/invite', requireAuth, async (req, res) => {
     const invitedUser = await User.findOne({ email: email.trim().toLowerCase() });
     if (!invitedUser) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-    if (channel.members.includes(invitedUser._id)) {
+    if (channel.members.some(id => id.toString() === invitedUser._id.toString())) {
       return res.status(400).json({ error: 'Cet utilisateur est déjà membre' });
     }
 

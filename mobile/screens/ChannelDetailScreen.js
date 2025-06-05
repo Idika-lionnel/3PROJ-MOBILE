@@ -9,6 +9,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { API_URL } from '../config';
 import { Ionicons } from '@expo/vector-icons';
 import { socket } from '../socket';
+import moment from 'moment';
 
 const ChannelDetailScreen = () => {
   const { params } = useRoute();
@@ -21,6 +22,7 @@ const ChannelDetailScreen = () => {
   const [isMember, setIsMember] = useState(false);
 
 
+
   useEffect(() => {
     const fetchChannel = async () => {
       try {
@@ -28,6 +30,8 @@ const ChannelDetailScreen = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setChannel(res.data);
+        setIsCreator(res.data.isCreator || false); // 🔧
+        setIsMember(res.data.isMember || false);   // 🔧
       } catch (err) {
         console.error('Erreur récupération canal :', err.response?.data || err.message);
       }
@@ -92,28 +96,50 @@ const ChannelDetailScreen = () => {
     }
   };
 
-  return (
+  if (!channel) {
+    return (
+      <View style={[styles.container, { backgroundColor: dark ? '#000' : '#fff' }]}>
+        <Text style={{ color: dark ? '#fff' : '#000' }}>Chargement...</Text>
+      </View>
+    );
+  }
+
+return (
     <View style={[styles.container, { backgroundColor: dark ? '#000' : '#fff' }]}>
-      <Text style={[styles.title, { color: dark ? '#fff' : '#000' }]}>👥 Membres</Text>
+      <Text style={[styles.title, { color: dark ? '#fff' : '#000' }]}>
+        #{channel.name} {channel.isPrivate ? '🔒' : '🌐'}
+      </Text>
+      <Text style={{ color: dark ? '#aaa' : '#333', marginBottom: 5 }}>
+        {channel.description || 'Pas de description'}
+      </Text>
+   
 
-      <FlatList
-        data={channel?.members || []}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <View style={styles.memberRow}>
-            <Text style={[styles.memberText, { color: dark ? '#eee' : '#111' }]}>
-              {item.prenom} {item.nom}
-            </Text>
-            {channel?.isCreator && item._id !== user._id && (
-              <TouchableOpacity onPress={() => handleRemove(item._id)}>
-                <Ionicons name="close" size={22} color="red" />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      />
+      <Text style={[styles.subtitle, { color: dark ? '#fff' : '#000' }]}>👥 Membres</Text>
 
-      {channel?.isCreator && (
+      {(isCreator || isMember) ? (
+        <FlatList
+          data={channel?.members || []}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <View style={styles.memberRow}>
+              <Text style={[styles.memberText, { color: dark ? '#eee' : '#111' }]}>
+                {item.prenom} {item.nom}
+              </Text>
+              {isCreator && item._id !== user._id && (
+                <TouchableOpacity onPress={() => handleRemove(item._id)}>
+                  <Ionicons name="close" size={22} color="red" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
+      ) : (
+        <Text style={{ color: '#999', textAlign: 'center' }}>
+          Vous n’avez pas accès à la liste des membres de ce canal.
+        </Text>
+      )}
+
+      {isCreator && (
         <View style={styles.inviteBox}>
           <TextInput
             style={[
@@ -140,7 +166,8 @@ const ChannelDetailScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 5 },
+  subtitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 10 },
   memberRow: {
     backgroundColor: '#e5e7eb',
     borderRadius: 8,
@@ -150,9 +177,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  memberText: {
-    fontSize: 16,
-  },
+  memberText: { fontSize: 16 },
   inviteBox: { marginTop: 20 },
   input: {
     borderWidth: 1,

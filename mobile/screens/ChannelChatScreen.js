@@ -37,6 +37,7 @@ const ChannelChatScreen = () => {
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [channel, setChannel] = useState(null);
 
 
   useEffect(() => {
@@ -56,7 +57,7 @@ const ChannelChatScreen = () => {
         const res = await axios.get(`${API_URL}/api/channels/${channelId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setChannelName(res.data.name);
+        setChannelName(res.data.name || '(canal)');
         setIsCreator(res.data.isCreator || false); // <-- ajouter ceci
         setIsMember(res.data.isMember || false);
         setChannel(res.data);
@@ -315,7 +316,7 @@ const filteredMessages = messages.filter(msg =>
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {isMember ? (
+      {isMember || isCreator ?(
         <View style={styles.footerBar}>
           <View style={styles.inputContainer}>
             <TextInput
