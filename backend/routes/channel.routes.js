@@ -472,7 +472,7 @@ router.delete('/reaction/:messageId', requireAuth, async (req, res) => {
     io.to(message.channel.toString()).emit('channel_reaction_removed', {
       messageId,
       channelId: message.channel.toString(),
-      user: populatedUser
+      userId: userId  // uniquement l'ID ici
     });
 
     res.status(200).json({ message: 'Réaction supprimée avec succès' });
