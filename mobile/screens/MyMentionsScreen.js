@@ -4,7 +4,7 @@ import { View, Text } from 'react-native';
 const MyMentionsScreen = () => {
   return (
     <View>
-      <Text>Liste des mentions</Text>
+      <Text> Aucune mentions </Text>
     </View>
   );
 };
