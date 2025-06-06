@@ -330,6 +330,7 @@ const filteredMessages = messages.filter(msg =>
   (msg.attachmentUrl && msg.attachmentUrl.toLowerCase().includes(searchQuery.toLowerCase()))
 );
   return (
+
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
