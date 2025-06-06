@@ -1,24 +1,35 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import React, { useContext, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ThemeContext } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { fetchUserWorkspaces } from '../services/workspaceService';
 
-const DashboardMobile = ({ user }) => {
+const DashboardMobile = () => {
   const navigation = useNavigation();
-  const { logout } = useContext(AuthContext);
+  const { logout, token, user } = useContext(AuthContext);
   const { dark, toggleTheme } = useContext(ThemeContext);
 
   const [tasks, setTasks] = useState([
-    { id: 1, label: 'Appel Team com', done: false },
-    { id: 2, label: 'Revoir dernier push', done: false },
-    { id: 3, label: 'Basculer en SCPR', done: true },
+
   ]);
   const [newTask, setNewTask] = useState('');
-  const [workspaces] = useState([]); // placeholder
+  const [workspaces, setWorkspaces] = useState([]);
 
   const styles = createStyles(dark);
+
+  useEffect(() => {
+    const loadWorkspaces = async () => {
+      try {
+        const data = await fetchUserWorkspaces(token);
+        setWorkspaces(data);
+      } catch (err) {
+        console.error('Erreur chargement workspaces :', err.response?.data || err.message);
+      }
+    };
+    loadWorkspaces();
+  }, []);
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
@@ -64,11 +75,13 @@ const DashboardMobile = ({ user }) => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Bonjour {user?.prenom} {user?.nom}</Text>
           <Text style={styles.role}>{user?.role}</Text>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Documents')}>
+
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MyDocuments')}>
             <Text style={styles.buttonText}>Mes documents</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Links')}>
-            <Text style={styles.buttonText}>Mes liens utiles</Text>
+
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MyMentions')}>
+            <Text style={styles.buttonText}>Mentions</Text>
           </TouchableOpacity>
         </View>
 
@@ -106,9 +119,13 @@ const DashboardMobile = ({ user }) => {
             <Text style={styles.noWorkspaces}>Aucun workspace trouvé.</Text>
           ) : (
             workspaces.map(ws => (
-              <View key={ws._id} style={styles.workspaceBox}>
+              <TouchableOpacity
+                key={ws._id}
+                style={styles.workspaceBox}
+                onPress={() => navigation.navigate('WorkspaceDetail', { id: ws._id })}
+              >
                 <Text style={styles.workspaceText}>{ws.name}</Text>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
@@ -142,7 +159,7 @@ const createStyles = (dark) => StyleSheet.create({
     marginBottom: 20,
   },
   cardBlue: {
-    backgroundColor: dark ? '#1e3a8a' : '#3b82f6',
+    backgroundColor: dark ? '#1e293b' : 'white',
     padding: 20,
     borderRadius: 10,
     marginBottom: 20,
@@ -156,7 +173,7 @@ const createStyles = (dark) => StyleSheet.create({
   cardTitleWhite: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: dark ? '#fff' : '#111',
     marginBottom: 10,
     textAlign: 'center',
   },
@@ -215,7 +232,7 @@ const createStyles = (dark) => StyleSheet.create({
     fontWeight: 'bold',
   },
   workspaceBox: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#2563eb',
     padding: 20,
     borderRadius: 10,
     marginVertical: 5,
