@@ -12,7 +12,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '../components/channelChatStyles';
 import { useNavigation } from '@react-navigation/native';
-import { socket } from '../socket'
+import  socket  from '../socket'
+
 
 
 const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
@@ -75,13 +76,10 @@ const ChannelChatScreen = () => {
   useEffect(() => {
     if (!socket || !channelId) return;
 
-
     // 1. Rejoindre la room du canal
     socket.emit('join_channel', channelId);
-    // 🔁 Rejoint la room perso pour recevoir les expulsions
     socket.emit('join', user._id);
 
-    // 2. Écouter l’événement de retrait
     const handleKick = ({ channelId: removedChannelId }) => {
       if (removedChannelId === channelId) {
         Alert.alert(
@@ -92,32 +90,72 @@ const ChannelChatScreen = () => {
       }
     };
 
-    // 3. Enregistrement de l'écouteur
     socket.on('removed_from_channel', handleKick);
 
-    // 4. Nettoyage
+    // 🟡 ➕ AJOUTE ICI LES LISTENERS TEMPS RÉEL (messages & réactions)
+    // 👇👇👇 à coller juste après `socket.on('removed_from_channel', handleKick);`
+
+    socket.on('new_channel_message', (msg) => {
+      console.log('📨 Nouveau message reçu en live', msg); // << ASTUCE LOG
+      if (msg.channel === channelId) {
+        setMessages(prev => {
+          const exists = prev.some(m => m._id === msg._id);
+          return exists ? prev : [...prev, msg];
+        });
+      }
+    });
+
+   socket.on('channel_reaction_updated', ({ messageId, emoji, user }) => {
+     setMessages(prev =>
+       prev.map(msg =>
+         msg._id === messageId
+           ? {
+               ...msg,
+               reactions: [
+                 ...(msg.reactions || []).filter(r => r.user?._id !== user._id),
+                 { user, emoji }
+               ]
+             }
+           : msg
+       )
+     );
+   });
+
+    socket.on('channel_reaction_removed', ({ messageId, user }) => {
+      setMessages(prev =>
+        prev.map(msg =>
+          msg._id === messageId
+            ? {
+                ...msg,
+                reactions: (msg.reactions || []).filter(r => r.user?._id !== user._id)
+              }
+            : msg
+        )
+      );
+    });
+
+    // 🧹 Nettoyage
     return () => {
       socket.off('removed_from_channel', handleKick);
+      socket.off('new_channel_message');
+      socket.off('channel_reaction_updated');
+      socket.off('channel_reaction_removed');
     };
   }, [channelId]);
 
+  const handleSend = () => {
+    if (!input.trim() || !user?._id || !channelId) return;
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+    const msg = {
+      channelId,
+      senderId: user._id,
+      content: input,
+      type: 'text',
+      createdAt: new Date().toISOString(),
+    };
 
-    try {
-      const res = await axios.post(`${API_URL}/api/channels/${channelId}/messages`, {
-        content: input,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setMessages((prev) => [...prev, res.data]);
-      setInput('');
-      flatListRef.current?.scrollToEnd({ animated: true });
-    } catch (err) {
-      console.error('Erreur envoi message :', err.response?.data || err.message);
-    }
+    socket.emit('channel_message', msg);
+    setInput('');
   };
 
   const handlePickFile = async () => {
@@ -145,13 +183,16 @@ const ChannelChatScreen = () => {
         },
       });
 
-      setMessages((prev) => [...prev, res.data]);
+
       flatListRef.current?.scrollToEnd({ animated: true });
+
     } catch (err) {
       console.error('❌ Erreur upload fichier :', err.message, err.response?.data);
       Alert.alert('Erreur', 'Échec de l’envoi');
     }
   };
+
+
 
   const toggleReaction = async (messageId, currentReaction, emoji) => {
     try {
@@ -170,28 +211,35 @@ const ChannelChatScreen = () => {
         });
       }
 
-      const res = await axios.get(`${API_URL}/api/channels/${channelId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMessages(res.data);
+
     } catch (err) {
       console.error('Erreur réaction emoji :', err.response?.data || err.message);
     }
   };
 
   const renderItem = ({ item }) => {
-    const isMine = item.senderId._id === user._id;
+
+    const senderId = typeof item.senderId === 'object' ? item.senderId._id : item.senderId;
+    const isMine = senderId === user._id;
+    const sender = typeof item.senderId === 'object' ? item.senderId : null;
+    const senderName = isMine ? user.prenom : sender?.prenom || 'Utilisateur';
+
     const imageUrl = item.attachmentUrl?.replace('localhost', API_URL.replace(/^https?:\/\//, ''));
 
+
+    const messageTextStyle = isMine ? styles.messageText : styles.messageTextReceiver;
+    const senderTextStyle = isMine ? styles.senderText : styles.senderTextReceiver;
 
     return (
       <View style={{ marginVertical: 4 }}>
         <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.otherMessage]}>
-          <Text style={styles.senderText}>{item.senderId.prenom} :</Text>
+         <Text style={senderTextStyle}>{senderName} :</Text>
+
+
 
           {item.content && (
             <TouchableOpacity onLongPress={() => setShowReactionsFor(item._id)}>
-              <Text style={styles.messageText}>{item.content}</Text>
+              <Text style={messageTextStyle}>{item.content}</Text>
             </TouchableOpacity>
           )}
 
@@ -310,7 +358,7 @@ const filteredMessages = messages.filter(msg =>
       <FlatList
         ref={flatListRef}
        data={filteredMessages}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => item._id ? item._id.toString() : `key-${index}`}
         renderItem={renderItem}
         contentContainerStyle={styles.messagesList}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
@@ -360,7 +408,7 @@ const filteredMessages = messages.filter(msg =>
           <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 10 }}>
             <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Réactions {reactionDetail?.emoji}</Text>
             {reactionDetail?.users?.map((r, i) => (
-              <Text key={i}>{r.userId?.prenom || 'Utilisateur inconnu'}</Text>
+              <Text key={i}>{r.user?.prenom || 'Utilisateur inconnu'}</Text>
             ))}
           </View>
         </TouchableOpacity>

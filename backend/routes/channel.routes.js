@@ -135,10 +135,12 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
       senderId: req.user._id,
     });
 
-    const fullMessage = await message.populate('senderId', 'prenom nom');
+    const fullMessage = await ChannelMessage.findById(message._id).populate('senderId', 'prenom nom');
+
 
     const io = req.app.get('io');
-    io.to(req.params.id).emit('new_channel_message', fullMessage);
+    io.to(req.params.id).emit('new_channel_message', fullMessage.toObject());
+
 
     res.status(201).json(fullMessage);
   } catch (err) {
@@ -174,15 +176,7 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
     if (!isWorkspaceMember) {
       return res.status(403).json({ error: 'Accès refusé (non membre du workspace)' });
     }
-    console.log('📦 DEBUG accès canal', {
-      channelId: channel._id.toString(),
-      canalName: channel.name,
-      isPrivate: channel.isPrivate,
-      userId: userId,
-      channelMembers: channel.members.map(id => id.toString()),
-      isChannelMember,
-      isCreator
-    });
+
 
     if (channel.isPrivate && !isChannelMember && !isCreator) {
       return res.status(403).json({ error: 'Accès refusé (canal privé)' });
@@ -227,7 +221,7 @@ router.post(
       return res.status(400).json({ error: 'Aucun fichier reçu' });
     }
 
-    const message = await ChannelMessage.create({
+    const createdMessage = await ChannelMessage.create({
       senderId: req.user._id,
       channel: req.params.channelId,
       attachmentUrl: `http://${req.hostname}:5050/uploads/${req.file.filename}`,
@@ -235,7 +229,7 @@ router.post(
       content: '',
     });
 
-    const fullMessage = await message.populate('senderId', 'prenom nom');
+    const fullMessage = await ChannelMessage.findById(createdMessage._id).populate('senderId', 'prenom nom');
 
     const io = req.app.get('io');
     io.to(req.params.channelId).emit('new_channel_message', fullMessage);
@@ -273,17 +267,8 @@ router.get('/:id', requireAuth, async (req, res) => {
     if (!isWorkspaceMember) {
       return res.status(403).json({ error: 'Accès interdit (non membre du workspace)' });
     }
-    console.log('📦 DEBUG accès canal', {
-      channelId: channel._id.toString(),
-      canalName: channel.name,
-      isPrivate: channel.isPrivate,
-      userId: userId,
-      channelMembers: channel.members.map(id => id.toString()),
-      isChannelMember,
-      isCreator
-    });
-    console.log("📦 DEBUG channel.members : ", channel.members.map(id => id.toString()));
-    console.log("👤 userId : ", userId);
+
+
     if (channel.isPrivate && !isChannelMember && !isCreator) {
       return res.status(403).json({ error: 'Accès interdit (canal privé)' });
     }
@@ -347,11 +332,12 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
         await message.save();
 
         const io = req.app.get('io');
+        const populatedUser = await User.findById(userId).select('prenom nom');
         io.to(message.channel.toString()).emit('channel_reaction_updated', {
           messageId,
-          userId,
           emoji,
-          channelId: message.channel.toString()
+          channelId: message.channel.toString(),
+          user: populatedUser // 👈 envoyé directement
         });
 
         return res.status(200).json({ message: 'Réaction modifiée' });
@@ -362,11 +348,13 @@ router.post('/reaction/:messageId', requireAuth, async (req, res) => {
       await message.save();
 
       const io = req.app.get('io');
+      const populatedUser = await User.findById(userId).select('prenom nom');
+
       io.to(message.channel.toString()).emit('channel_reaction_updated', {
         messageId,
-        userId,
         emoji,
-        channelId: message.channel.toString()
+        channelId: message.channel.toString(),
+        user: populatedUser // 👈 envoyé directement
       });
 
       return res.status(200).json({ message: 'Réaction ajoutée' });
@@ -480,10 +468,11 @@ router.delete('/reaction/:messageId', requireAuth, async (req, res) => {
     await message.save();
 
     const io = req.app.get('io');
+    const populatedUser = await User.findById(userId).select('prenom nom');
     io.to(message.channel.toString()).emit('channel_reaction_removed', {
       messageId,
-      userId,
-      channelId: message.channel.toString()
+      channelId: message.channel.toString(),
+      user: populatedUser
     });
 
     res.status(200).json({ message: 'Réaction supprimée avec succès' });

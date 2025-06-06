@@ -16,6 +16,7 @@ export const createStyles = (dark) =>
       color: dark ? '#fff' : '#111',
       marginBottom: 10,
     },
+
     messagesList: {
       paddingBottom: 20,
     },
@@ -32,15 +33,14 @@ export const createStyles = (dark) =>
     },
     otherMessage: {
       alignSelf: 'flex-start',
-      backgroundColor: dark ? '#1e293b' : '#e5e7eb',
+      backgroundColor: '#e3f1ff',
       borderRadius: 12,
       padding: 10,
       maxWidth: '70%',
     },
-    senderText: {
-      fontWeight: 'bold',
-      color: '#fff',
-      marginBottom: 2,
+    messageTextReceiver: {
+      color: '#224262', // ✅ Couleur texte récepteur
+      fontSize: 16,
     },
     messageText: {
       color: '#fff',
@@ -53,7 +53,7 @@ export const createStyles = (dark) =>
     },
     timestamp: {
       fontSize: 10,
-      color: '#ddd',
+      color: '#fff',
       alignSelf: 'flex-end',
       marginTop: 4,
     },
@@ -171,5 +171,16 @@ export const createStyles = (dark) =>
       searchIconContainer: {
         padding: 4,
       },
+      senderTextReceiver: {
+        fontWeight: 'bold',
+        color: '#224262',
+        marginBottom: 2,
+      },
+      senderText: {
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 2,
+      },
+
 
   });

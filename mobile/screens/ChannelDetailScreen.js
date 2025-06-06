@@ -112,7 +112,7 @@ return (
       <Text style={{ color: dark ? '#aaa' : '#333', marginBottom: 5 }}>
         {channel.description || 'Pas de description'}
       </Text>
-   
+
 
       <Text style={[styles.subtitle, { color: dark ? '#fff' : '#000' }]}>👥 Membres</Text>
 
