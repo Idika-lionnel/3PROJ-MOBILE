@@ -121,18 +121,21 @@ const ChannelChatScreen = () => {
      );
    });
 
-    socket.on('channel_reaction_removed', ({ messageId, user }) => {
-      setMessages(prev =>
-        prev.map(msg =>
-          msg._id === messageId
-            ? {
-                ...msg,
-                reactions: (msg.reactions || []).filter(r => r.user?._id !== user._id)
-              }
-            : msg
-        )
-      );
-    });
+   socket.on('channel_reaction_removed', ({ messageId, userId }) => {
+     setMessages(prev =>
+       prev.map(msg =>
+         msg._id === messageId
+           ? {
+               ...msg,
+               reactions: (msg.reactions || []).filter(r =>
+                 (r.user?._id || r.userId?.toString()) !== userId.toString()
+               )
+             }
+           : msg
+       )
+     );
+   });
+
 
     // 🧹 Nettoyage
     return () => {
