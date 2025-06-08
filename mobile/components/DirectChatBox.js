@@ -22,6 +22,7 @@ import axios from 'axios';
 import * as DocumentPicker from 'expo-document-picker';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { ThemeContext } from '../context/ThemeContext';
 
 const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
 
@@ -30,6 +31,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const currentUserId = propUserId || user?._id;
 
   const [log, setLog] = useState([]);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   //const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -283,6 +285,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
     const isMeStyle = isMe ? styles.bubbleMe : styles.bubbleYou;
 
     return (
+
       <View style={styles.messageBlock}>
         <TouchableOpacity style={isMeStyle} onLongPress={handleLongPress}>
           <Text style={isMe ? styles.text : styles.textYou}>{item.message}</Text>
@@ -319,7 +322,8 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       </View>
     );
   };
-
+const { dark } = useContext(ThemeContext);
+const styles = createStyles(dark);
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -327,44 +331,51 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}
       >
-        <View style={styles.container}>
-          <View style={styles.searchRow}>
-            <Ionicons name="search" size={24} color="#666" />
+        <View style={styles.headerRow}>
+          <Text style={styles.channelTitle}>
+            {receiver?.prenom} {receiver?.nom}
+          </Text>
+
+          {searchVisible && (
             <TextInput
               placeholder="Rechercher..."
+              placeholderTextColor="#999"
               value={searchTerm}
               onChangeText={setSearchTerm}
               style={styles.searchInput}
+            />
+          )}
+
+          <TouchableOpacity onPress={() => setSearchVisible(!searchVisible)} style={styles.searchIconContainer}>
+            <Ionicons name="search" size={22} color={dark ? '#fff' : '#000'} />
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          ref={flatRef}
+          data={filteredMessages}
+          renderItem={renderItem}
+          keyExtractor={(item, i) => item._id?.toString() || i.toString()}
+          onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
+          style={{ flex: 1 }}
+        />
+
+        <View style={styles.footerBar}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={message}
+              onChangeText={setMessage}
+              style={styles.inputWebStyle}
+              placeholder="Message..."
               placeholderTextColor="#999"
             />
           </View>
-
-          <FlatList
-            ref={flatRef}
-            data={filteredMessages}
-            renderItem={renderItem}
-            keyExtractor={(item, i) => item._id?.toString() || i.toString()}
-            onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
-            style={{ flex: 1 }}
-          />
-
-          <View style={styles.footerBar}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                value={message}
-                onChangeText={setMessage}
-                style={styles.inputWebStyle}
-                placeholder="Message..."
-                placeholderTextColor="#999"
-              />
-            </View>
-            <TouchableOpacity onPress={sendFile}>
-              <Ionicons name="add" size={24} color="#999" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-              <Ionicons name="arrow-up" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={sendFile}>
+            <Ionicons name="add" size={24} color="#999" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <Ionicons name="arrow-up" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <Modal visible={isModalVisible} transparent>
@@ -377,7 +388,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (dark) => StyleSheet.create({
   container: { flex: 1 },
   searchRow: {
     flexDirection: 'row',
@@ -392,11 +403,13 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    paddingVertical: 4,
-    fontSize: 15,
-    color: '#000',
+    backgroundColor: '#f1f1f1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+    color: dark ? '#fff' : '#000',
+    marginRight: 8,
   },
   footerBar: {
     flexDirection: 'row',
@@ -502,6 +515,24 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 12,
     backgroundColor: '#f1f1f1',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    backgroundColor: dark ? '#0f172a' : '#fff',
+  },
+  channelTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: dark ? '#fff' : '#111',
+    marginRight: 8,
+  },
+  searchIconContainer: {
+    padding: 4,
   },
 
 });

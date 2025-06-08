@@ -14,6 +14,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const conversationRoutes = require('./routes/conversation.routes');
 const messageRoutes = require('./routes/message.routes');
+const ChannelMessage = require('./models/ChannelMessage');
 const workspaceRoutes = require('./routes/workspace.routes');
 const channelRoutes = require('./routes/channel.routes');
 
@@ -99,12 +100,29 @@ io.on('connection', (socket) => {
   console.log('✅ Client connecté via Socket.io');
 
 
+   // ✅ Ajout d'un membre au canal
+   socket.on('channel_member_added', ({ channelId, member }) => {
+     io.to(channelId).emit('channel_member_added', { channelId, member });
+   });
+
+   // ✅ Suppression d’un membre
+   socket.on('channel_member_removed', ({ channelId, userId }) => {
+     io.to(channelId).emit('channel_member_removed', { channelId, userId });
+   });
+
 
   // ✅ Rejoindre sa room perso
   socket.on('join', (userId) => {
     if (userId) {
       socket.join(userId);
       console.log(`🟢 L'utilisateur ${userId} a rejoint sa room`);
+    }
+  });
+  // ✅ Rejoindre un workspace
+  socket.on('join_workspace', (workspaceId) => {
+    if (workspaceId) {
+      socket.join(workspaceId);
+      console.log(`🏢 Socket rejoint le workspace ${workspaceId}`);
     }
   });
 
@@ -162,11 +180,53 @@ io.on('connection', (socket) => {
     console.log(`❌ Réaction supprimée sur message ${messageId} par ${userId}`);
     io.emit('reaction_removed', { messageId, userId });
   });
+  // Messsages canaux
+  socket.on('channel_message', async (msg) => {
+    try {
+      const { channelId, senderId, content, attachmentUrl, type } = msg;
+
+      if (!channelId || !senderId) {
+        return console.warn('❌ channelId ou senderId manquant');
+      }
+
+      const newMessage = await ChannelMessage.create({
+        channel: channelId,
+        senderId,
+        content: type === 'text' ? content : '',
+        attachmentUrl: type === 'file' ? attachmentUrl : '',
+        type,
+      });
+
+      // ✅ Peupler l’expéditeur (indispensable pour React Native)
+      const fullMessage = await ChannelMessage.findById(newMessage._id).populate('senderId', 'prenom nom');
+
+      // ✅ Envoyer l’objet peuplé (pas brut)
+      io.to(channelId).emit('new_channel_message', fullMessage.toObject());
+
+      console.log(`📤 Nouveau message ${type} envoyé à ${channelId}`);
+    } catch (err) {
+      console.error('❌ Erreur channel_message :', err);
+    }
+  });
+
 
   // ✅ Réactions dans canaux
-  socket.on('channel_reaction_updated', ({ messageId, userId, emoji, channelId }) => {
-    console.log(`🔄 Réaction canal ${channelId} sur message ${messageId} par ${userId}`);
-    io.to(channelId).emit('channel_reaction_updated', { messageId, userId, emoji });
+  socket.on('channel_reaction_updated', ({ messageId, emoji, user }) => {
+    if (!user || !user._id) return; // ne rien faire si pas de user
+
+    setMessages(prev =>
+      prev.map(msg =>
+        msg._id === messageId
+          ? {
+              ...msg,
+              reactions: [
+                ...(msg.reactions || []).filter(r => r.user?._id !== user._id),
+                { user, emoji }
+              ]
+            }
+          : msg
+      )
+    );
   });
 
   socket.on('channel_reaction_removed', ({ messageId, userId, channelId }) => {

@@ -12,6 +12,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '../components/channelChatStyles';
 import { useNavigation } from '@react-navigation/native';
+import  socket  from '../socket'
+
 
 
 const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
@@ -34,6 +36,9 @@ const ChannelChatScreen = () => {
   const [reactionDetail, setReactionDetail] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [channel, setChannel] = useState(null);
 
 
   useEffect(() => {
@@ -53,7 +58,10 @@ const ChannelChatScreen = () => {
         const res = await axios.get(`${API_URL}/api/channels/${channelId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setChannelName(res.data.name);
+        setChannelName(res.data.name || '(canal)');
+        setIsCreator(res.data.isCreator || false); // <-- ajouter ceci
+        setIsMember(res.data.isMember || false);
+        setChannel(res.data);
       } catch (err) {
         console.error('Erreur chargement canal :', err.response?.data || err.message);
       }
@@ -65,22 +73,92 @@ const ChannelChatScreen = () => {
     }
   }, [channelId]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    if (!socket || !channelId) return;
 
-    try {
-      const res = await axios.post(`${API_URL}/api/channels/${channelId}/messages`, {
-        content: input,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    // 1. Rejoindre la room du canal
+    socket.emit('join_channel', channelId);
+    socket.emit('join', user._id);
 
-      setMessages((prev) => [...prev, res.data]);
-      setInput('');
-      flatListRef.current?.scrollToEnd({ animated: true });
-    } catch (err) {
-      console.error('Erreur envoi message :', err.response?.data || err.message);
-    }
+    const handleKick = ({ channelId: removedChannelId }) => {
+      if (removedChannelId === channelId) {
+        Alert.alert(
+          '⛔ Accès retiré',
+          'Vous avez été retiré de ce canal.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
+    };
+
+    socket.on('removed_from_channel', handleKick);
+
+    // 🟡 ➕ AJOUTE ICI LES LISTENERS TEMPS RÉEL (messages & réactions)
+    // 👇👇👇 à coller juste après `socket.on('removed_from_channel', handleKick);`
+
+    socket.on('new_channel_message', (msg) => {
+      console.log('📨 Nouveau message reçu en live', msg); // << ASTUCE LOG
+      if (msg.channel === channelId) {
+        setMessages(prev => {
+          const exists = prev.some(m => m._id === msg._id);
+          return exists ? prev : [...prev, msg];
+        });
+      }
+    });
+
+   socket.on('channel_reaction_updated', ({ messageId, emoji, user }) => {
+     setMessages(prev =>
+       prev.map(msg =>
+         msg._id === messageId
+           ? {
+               ...msg,
+               reactions: [
+                 ...(msg.reactions || []).filter(r => r.user?._id !== user._id),
+                 { user, emoji }
+               ]
+             }
+           : msg
+       )
+     );
+   });
+
+   socket.on('channel_reaction_removed', ({ messageId, userId }) => {
+     setMessages(prev =>
+       prev.map(msg =>
+         msg._id === messageId
+           ? {
+               ...msg,
+               reactions: (msg.reactions || []).filter(r =>
+                 (r.user?._id || r.userId?.toString()) !== userId.toString()
+               )
+             }
+           : msg
+       )
+     );
+   });
+
+
+    // 🧹 Nettoyage
+    return () => {
+      socket.off('removed_from_channel', handleKick);
+      socket.off('new_channel_message');
+      socket.off('channel_reaction_updated');
+      socket.off('channel_reaction_removed');
+    };
+  }, [channelId]);
+
+  const handleSend = () => {
+    if (!input.trim() || !user?._id || !channelId) return;
+
+    const msg = {
+      channelId,
+      senderId: user._id,
+      content: input,
+      type: 'text',
+      createdAt: new Date().toISOString(),
+    };
+
+    socket.emit('channel_message', msg);
+    setInput('');
   };
 
   const handlePickFile = async () => {
@@ -108,13 +186,16 @@ const ChannelChatScreen = () => {
         },
       });
 
-      setMessages((prev) => [...prev, res.data]);
+
       flatListRef.current?.scrollToEnd({ animated: true });
+
     } catch (err) {
       console.error('❌ Erreur upload fichier :', err.message, err.response?.data);
       Alert.alert('Erreur', 'Échec de l’envoi');
     }
   };
+
+
 
   const toggleReaction = async (messageId, currentReaction, emoji) => {
     try {
@@ -133,28 +214,35 @@ const ChannelChatScreen = () => {
         });
       }
 
-      const res = await axios.get(`${API_URL}/api/channels/${channelId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMessages(res.data);
+
     } catch (err) {
       console.error('Erreur réaction emoji :', err.response?.data || err.message);
     }
   };
 
   const renderItem = ({ item }) => {
-    const isMine = item.senderId._id === user._id;
+
+    const senderId = typeof item.senderId === 'object' ? item.senderId._id : item.senderId;
+    const isMine = senderId === user._id;
+    const sender = typeof item.senderId === 'object' ? item.senderId : null;
+    const senderName = isMine ? user.prenom : sender?.prenom || 'Utilisateur';
+
     const imageUrl = item.attachmentUrl?.replace('localhost', API_URL.replace(/^https?:\/\//, ''));
 
+
+    const messageTextStyle = isMine ? styles.messageText : styles.messageTextReceiver;
+    const senderTextStyle = isMine ? styles.senderText : styles.senderTextReceiver;
 
     return (
       <View style={{ marginVertical: 4 }}>
         <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.otherMessage]}>
-          <Text style={styles.senderText}>{item.senderId.prenom} :</Text>
+         <Text style={senderTextStyle}>{senderName} :</Text>
+
+
 
           {item.content && (
             <TouchableOpacity onLongPress={() => setShowReactionsFor(item._id)}>
-              <Text style={styles.messageText}>{item.content}</Text>
+              <Text style={messageTextStyle}>{item.content}</Text>
             </TouchableOpacity>
           )}
 
@@ -242,6 +330,7 @@ const filteredMessages = messages.filter(msg =>
   (msg.attachmentUrl && msg.attachmentUrl.toLowerCase().includes(searchQuery.toLowerCase()))
 );
   return (
+
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -273,29 +362,36 @@ const filteredMessages = messages.filter(msg =>
       <FlatList
         ref={flatListRef}
        data={filteredMessages}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => item._id ? item._id.toString() : `key-${index}`}
         renderItem={renderItem}
         contentContainerStyle={styles.messagesList}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      <View style={styles.footerBar}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            style={styles.inputWebStyle}
-            placeholder="Message..."
-            placeholderTextColor="#999"
-          />
+      {isMember || isCreator ?(
+        <View style={styles.footerBar}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              style={styles.inputWebStyle}
+              placeholder="Message..."
+              placeholderTextColor="#999"
+            />
+          </View>
+          <TouchableOpacity onPress={handlePickFile}>
+            <Ionicons name="add" size={24} color="#999" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+            <Ionicons name="arrow-up" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handlePickFile}>
-          <Ionicons name="add" size={24} color="#999" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Ionicons name="arrow-up" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <View style={{ padding: 12, backgroundColor: '#f3f4f6', alignItems: 'center' }}>
+          <Text style={{ color: '#999' }}>Vous devez être membre de ce canal pour envoyer un message.</Text>
+        </View>
+      )}
+
 
       <Modal visible={isModalVisible} transparent>
         <TouchableOpacity
@@ -316,7 +412,7 @@ const filteredMessages = messages.filter(msg =>
           <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 10 }}>
             <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Réactions {reactionDetail?.emoji}</Text>
             {reactionDetail?.users?.map((r, i) => (
-              <Text key={i}>{r.userId?.prenom || 'Utilisateur inconnu'}</Text>
+              <Text key={i}>{r.user?.prenom || 'Utilisateur inconnu'}</Text>
             ))}
           </View>
         </TouchableOpacity>
