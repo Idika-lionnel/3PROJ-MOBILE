@@ -5,7 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6f1cc44e-4fb3-4306-a97b-41bb208cd5e6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/mobile/screens/MyMentionsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/MyMentionsScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/channel.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/channel.routes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/workspace.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/workspace.routes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/components/DirectChatBox.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/components/DirectChatBox.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/ChannelDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/ChannelDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/MyDocumentsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/MyDocumentsScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/WorkspaceDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/WorkspaceDetailScreen.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

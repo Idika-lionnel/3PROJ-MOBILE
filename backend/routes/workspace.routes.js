@@ -200,6 +200,6 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Erreur suppression membre' });
   }
 });
-
+// route suppression channel
 
 module.exports = router;

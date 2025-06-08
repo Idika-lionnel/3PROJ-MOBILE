@@ -522,7 +522,7 @@ const createStyles = (dark) => StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
     paddingHorizontal: 10,
-    paddingTop: 10,
+    paddingTop: 0,
     backgroundColor: dark ? '#0f172a' : '#fff',
   },
   channelTitle: {

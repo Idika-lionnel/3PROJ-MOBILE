@@ -61,7 +61,7 @@ const MyDocumentsScreen = () => {
           }}
           numberOfLines={1}
         >
-          {item.attachmentUrl.split('/').pop()}
+          {(item.attachmentUrl || '').split('/').pop()}
         </Text>
 
         {item.type === 'channel' && (
@@ -109,9 +109,12 @@ const MyDocumentsScreen = () => {
       ) : (
 
         <FlatList
-          data={documents.filter(doc =>
-            doc.attachmentUrl.toLowerCase().includes(search.toLowerCase())
-          )}
+          data={documents.filter(doc => {
+            const url = typeof doc.attachmentUrl === 'string' ? doc.attachmentUrl.toLowerCase() : '';
+            const name = typeof doc.channelName === 'string' ? doc.channelName.toLowerCase() : '';
+            const keyword = search.toLowerCase();
+            return url.includes(keyword) || name.includes(keyword);
+          })}
           keyExtractor={(item, index) => `${item.attachmentUrl}-${index}`}
           renderItem={renderItem}
         />

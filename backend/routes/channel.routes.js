@@ -480,7 +480,45 @@ router.delete('/reaction/:messageId', requireAuth, async (req, res) => {
     console.error('❌ Erreur suppression réaction :', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
+
 });
+
+// route modification channels
+router.patch('/:id', requireAuth, async (req, res) => {
+  try {
+    const channel = await Channel.findById(req.params.id);
+    if (!channel) return res.status(404).json({ error: 'Canal introuvable' });
+
+    if (!channel.createdBy.equals(req.user._id)) {
+      return res.status(403).json({ error: 'Non autorisé' });
+    }
+
+    channel.name = req.body.name || channel.name;
+    channel.description = req.body.description || '';
+    channel.isPrivate = req.body.isPrivate ?? channel.isPrivate;
+
+    await channel.save();
+    res.json(channel);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur mise à jour du canal' });
+  }
+});
+
+// route pour suppression des channels
+router.delete('/:id', requireAuth, async (req, res) => {
+  const channel = await Channel.findById(req.params.id);
+  if (!channel) return res.status(404).json({ error: 'Canal introuvable' });
+
+  if (!channel.createdBy.equals(req.user._id)) {
+    return res.status(403).json({ error: 'Non autorisé' });
+  }
+
+  await Channel.deleteOne({ _id: req.params.id });
+  res.status(200).json({ message: 'Canal supprimé' });
+});
+
+
+
 
 
 module.exports = router;

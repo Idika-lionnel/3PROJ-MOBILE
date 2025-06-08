@@ -122,10 +122,10 @@ const WorkspaceDetailScreen = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const res = await axios.patch(`${API_URL}/api/workspaces/${workspaceId}`, editData, {
+      await axios.patch(`${API_URL}/api/workspaces/${workspaceId}`, editData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setWorkspace(res.data);
+      await fetchData();        // ✅ recharge workspace complet
       setEditMode(false);
     } catch {
       Alert.alert('Erreur', 'Échec mise à jour');
