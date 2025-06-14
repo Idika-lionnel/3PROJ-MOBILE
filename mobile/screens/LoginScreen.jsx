@@ -3,12 +3,12 @@ import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert, Image } fro
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { AuthContext } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext'; // 👈 Ajout
+import { ThemeContext } from '../context/ThemeContext'; // 
 import axios from 'axios';
 
 WebBrowser.maybeCompleteAuthSession();
 import { API_URL } from '../config';
-//const API_URL = 'http://192.168.30.125:5050'; // adapte à ton IP
+
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext);

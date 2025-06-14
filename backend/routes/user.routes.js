@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const DirectMessage = require('../models/DirectMessage');
-const Channel = require('../models/Channel');
-const ChannelMessage = require('../models/ChannelMessage');
+const userController = require('../controllers/user.controller');
 
+// Middleware d'authentification
 const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -17,74 +16,35 @@ const requireAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('_id prenom nom email');
 
-    if (!user) return res.status(401).json({ error: 'Utilisateur introuvable' });
+    if (!user) {
+      return res.status(401).json({ error: 'Utilisateur introuvable' });
+    }
 
     req.user = user;
     req.userId = user._id;
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Token invalide' });
+    console.error('❌ Erreur d’authentification :', err);
+    return res.status(401).json({ error: 'Token invalide ou utilisateur introuvable' });
   }
 };
-// ✅ Liste de tous les utilisateurs (authentifiés)
-router.get('/all', requireAuth, async (req, res) => {
-  try {
-    const users = await User.find({}, '_id prenom nom email');
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur récupération utilisateurs' });
-  }
-});
-// ✅ Tous les fichiers accessibles à un utilisateur
-router.get('/documents', requireAuth, async (req, res) => {
-  try {
-    const userId = req.user._id.toString();
 
-    // 🔹 1. Fichiers des messages directs où l’utilisateur est sender ou receiver
-    const directFiles = await DirectMessage.find({
-      attachmentUrl: { $ne: '' },
-      $or: [
-        { senderId: userId },
-        { receiverId: userId }
-      ]
-    }).select('attachmentUrl createdAt senderId receiverId');
+// ✅ Liste des utilisateurs
+router.get('/all', requireAuth, userController.getAllUsers);
 
-    // 🔹 2. Fichiers des canaux où l’utilisateur est membre
-    const channels = await Channel.find({ members: userId }).select('_id name');
-    const channelIds = channels.map(c => c._id);
+// ✅ Tous les fichiers accessibles (directs + canaux)
+router.get('/documents', requireAuth, userController.getDocuments);
 
-    const channelFiles = await ChannelMessage.find({
-      attachmentUrl: { $ne: '' },
-      channel: { $in: channelIds }
-    }).select('attachmentUrl createdAt senderId channel').populate('channel', 'name');
+// ✅ Modifier son profil
+router.put('/update', requireAuth, userController.updateProfile);
 
-    // 🧩 Formatage unique
-    const formatted = [
-      ...directFiles.map(f => ({
-        type: 'direct',
-        attachmentUrl: f.attachmentUrl,
-        from: f.senderId.toString() === userId ? 'moi' : 'autre',
-        contactId: f.senderId.toString() === userId ? f.receiverId : f.senderId,
-        createdAt: f.createdAt
-      })),
-      ...channelFiles.map(f => ({
-        type: 'channel',
-        attachmentUrl: f.attachmentUrl,
-        channelId: f.channel._id,
-        channelName: f.channel.name,
-        createdAt: f.createdAt
-      }))
-    ];
+// ✅ Supprimer son compte
+router.delete('/delete', requireAuth, userController.deleteAccount);
 
-    // ✅ Tri par date décroissante
-    formatted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+// ✅ Exporter ses données personnelles
+router.get('/export', requireAuth, userController.exportData);
 
-    res.status(200).json(formatted);
-  } catch (err) {
-    console.error('❌ Erreur documents utilisateur :', err);
-    res.status(500).json({ error: 'Erreur serveur documents' });
-  }
-});
-
+// ✅ Obtenir l'utilisateur connecté
+router.get('/me', requireAuth, userController.getMe);
 
 module.exports = router;
