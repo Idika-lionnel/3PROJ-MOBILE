@@ -11,7 +11,8 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
+    const user = await User.findById(decoded.id).select('_id prenom nom email status');
+
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
     req.user = user;

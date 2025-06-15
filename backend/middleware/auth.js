@@ -12,7 +12,7 @@ module.exports = async function (req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select('_id prenom nom email');
+    const user = await User.findById(decoded.id).select('_id prenom nom email status');
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur introuvable' });
     }

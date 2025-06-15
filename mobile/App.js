@@ -18,6 +18,7 @@ import { ActivityIndicator, View } from 'react-native';
 import ChannelDetailScreen from './screens/ChannelDetailScreen';
 import MyDocumentsScreen from './screens/MyDocumentsScreen';
 import MyMentionsScreen from './screens/MyMentionsScreen';
+import SocketStatusManager from './components/SocketStatusManager';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ function AppNavigator() {
 
   return (
     <NavigationContainer>
+    <SocketStatusManager />
       <Stack.Navigator initialRouteName={token ? 'Dashboard' : 'Login'}>
         {token ? (
           <>

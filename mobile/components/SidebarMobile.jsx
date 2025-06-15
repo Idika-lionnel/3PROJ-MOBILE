@@ -9,6 +9,7 @@ const SidebarMobile = () => {
   const navigation = useNavigation();
   const { logout, user } = useContext(AuthContext);
 
+   console.log('🟢 STATUT UTILISATEUR :', user?.status);
 
   return (
     <View style={styles.sidebar}>
@@ -78,14 +79,15 @@ const styles = StyleSheet.create({
   },
   statusDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 10,
-    height: 10,
+    bottom: 0,         // au lieu de -2
+    right: 0,          // au lieu de -2
+    width: 100,
+    height: 100,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: '#2563eb',
+    backgroundColor: 'red', // par défaut
   },
+
 });
 
 export default SidebarMobile;

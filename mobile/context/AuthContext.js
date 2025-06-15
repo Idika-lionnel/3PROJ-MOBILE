@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_URL } from '../config';
+import socket from '../socket';
 
 export const AuthContext = createContext();
 
@@ -32,6 +33,27 @@ export const AuthProvider = ({ children }) => {
 
     loadToken();
   }, []);
+  useEffect(() => {
+    if (!user?._id) return;
+
+    // Rejoindre la room personnelle pour le statut
+    socket.emit('join', user._id);
+
+    const handleStatusUpdate = ({ userId, newStatus }) => {
+      if (userId === user._id) {
+        console.log('🟢 Nouveau statut reçu :', newStatus);
+        updateUser({ status: newStatus });
+      }
+    };
+
+    socket.on('user_status_updated', handleStatusUpdate);
+
+    return () => {
+      socket.off('user_status_updated', handleStatusUpdate);
+    };
+  }, [user?._id]);
+
+
   const updateUser = (newData) => {
     setUser(prev => ({ ...prev, ...newData }));
   };

@@ -30,6 +30,7 @@ const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
 const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   const { user } = useContext(AuthContext);
   const currentUserId = propUserId || user?._id;
+  const [receiverStatus, setReceiverStatus] = useState(receiver?.status || 'offline');
 
   const [log, setLog] = useState([]);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -124,7 +125,7 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
   useEffect(() => {
     const handleStatusUpdate = ({ userId, newStatus }) => {
       if (receiver && receiver._id === userId) {
-        receiver.status = newStatus;
+        setReceiverStatus(newStatus);
       }
     };
 
@@ -357,9 +358,9 @@ const styles = createStyles(dark);
                 styles.statusDot,
                 {
                   backgroundColor:
-                    receiver?.status === 'online'
+                    receiverStatus === 'online'
                       ? 'green'
-                      : receiver?.status === 'busy'
+                      : receiverStatus === 'busy'
                       ? 'orange'
                       : 'gray',
                 },
