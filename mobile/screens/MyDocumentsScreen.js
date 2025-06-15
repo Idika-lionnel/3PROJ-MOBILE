@@ -6,6 +6,19 @@ import { API_URL } from '../config';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 
+const getEmojiForFile = (url) => {
+  const ext = (url || '').split('.').pop().toLowerCase();
+
+  if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return '🖼️';
+  if (['pdf'].includes(ext)) return '📕';
+  if (['doc', 'docx'].includes(ext)) return '📄';
+  if (['xls', 'xlsx'].includes(ext)) return '📊';
+  if (['ppt', 'pptx'].includes(ext)) return '📽️';
+  if (['zip', 'rar'].includes(ext)) return '🗜️';
+  if (['mp4', 'mov', 'avi'].includes(ext)) return '🎥';
+  if (['mp3', 'wav'].includes(ext)) return '🎵';
+  return '📁'; // emoji par défaut
+};
 
 const MyDocumentsScreen = () => {
   const { token } = useContext(AuthContext);
@@ -19,7 +32,8 @@ const MyDocumentsScreen = () => {
       const res = await axios.get(`${API_URL}/users/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setDocuments(res.data);
+      setDocuments(res.data?.files || []);
+
     } catch (err) {
       console.error('Erreur chargement documents :', err.response?.data || err.message);
     } finally {
@@ -49,7 +63,9 @@ const MyDocumentsScreen = () => {
         elevation: 3,
       }}
     >
-      <Text style={{ fontSize: 24, marginRight: 14 }}>📄</Text>
+      <Text style={{ fontSize: 24, marginRight: 14 }}>
+  {getEmojiForFile(item.attachmentUrl)}
+</Text>
 
       <View style={{ flex: 1 }}>
         <Text
@@ -110,14 +126,23 @@ const MyDocumentsScreen = () => {
 
         <FlatList
           data={documents.filter(doc => {
+            if (!doc || typeof doc !== 'object') return false;
+
             const url = typeof doc.attachmentUrl === 'string' ? doc.attachmentUrl.toLowerCase() : '';
-            const name = typeof doc.channelName === 'string' ? doc.channelName.toLowerCase() : '';
+            const name =
+              doc.type === 'channel' && typeof doc.channelName === 'string'
+                ? doc.channelName.toLowerCase()
+                : '';
+
             const keyword = search.toLowerCase();
             return url.includes(keyword) || name.includes(keyword);
           })}
-          keyExtractor={(item, index) => `${item.attachmentUrl}-${index}`}
+          keyExtractor={(item, index) =>
+            item._id?.toString() || `${item.attachmentUrl}-${index}`
+          }
           renderItem={renderItem}
         />
+
       )}
     </View>
   );

@@ -5,12 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6f1cc44e-4fb3-4306-a97b-41bb208cd5e6" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/mobile/components/AvatarWithStatus.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/user.controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/user.controller.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/context/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/context/AuthContext.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/MyMentionsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/MyMentionsScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/ProfileScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/ProfileScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/User.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/User.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/user.routes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/user.routes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/components/DirectChatBox.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/components/DirectChatBox.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/components/SidebarMobile.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/components/SidebarMobile.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/ChatHomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/ChatHomeScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/MyDocumentsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/MyDocumentsScreen.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

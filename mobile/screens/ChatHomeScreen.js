@@ -52,7 +52,7 @@ const ChatHomeScreen = () => {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
-          const filtered = res.data.filter((u) => u._id !== userId);
+          const filtered = (res.data?.users || []).filter((u) => u._id !== userId);;
           setContacts(filtered);
         });
 

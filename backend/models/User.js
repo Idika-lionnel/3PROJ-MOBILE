@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['admin', 'membre', 'developpeur'],
     default: 'membre'
+  },
+  status: {
+    type: String,
+    enum: ['online', 'busy', 'offline'],
+    default: 'online',
   }
 }, { timestamps: true }); // 👉 ajoute createdAt / updatedAt
 

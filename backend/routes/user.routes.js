@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const userController = require('../controllers/user.controller');
 
+
 // Middleware d'authentification
 const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -37,6 +38,8 @@ router.get('/documents', requireAuth, userController.getDocuments);
 
 // ✅ Modifier son profil
 router.put('/update', requireAuth, userController.updateProfile);
+router.put('/status', requireAuth, userController.updateStatus);
+
 
 // ✅ Supprimer son compte
 router.delete('/delete', requireAuth, userController.deleteAccount);

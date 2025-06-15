@@ -20,19 +20,32 @@ exports.getDocuments = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // 📥 Fichiers reçus dans les messages directs
     const directFiles = await DirectMessage.find({
-      receiver: userId,
+      receiverId: userId,
       attachmentUrl: { $exists: true, $ne: '' }
+    }).lean();
+
+    directFiles.forEach(file => {
+      file.type = 'direct';
     });
 
+    // 📢 Fichiers dans les canaux
     const channelFiles = await ChannelMessage.find({
-      attachmentUrl: { $exists: true, $ne: '' },
-      // tu peux aussi filtrer par appartenance au canal ici
+      attachmentUrl: { $exists: true, $ne: '' }
+    })
+      .populate('channel', 'name') // pour récupérer le nom du canal
+      .lean();
+
+    channelFiles.forEach(file => {
+      file.type = 'channel';
+      file.channelName = file.channel?.name || 'Canal inconnu';
     });
 
+    // 🗃️ Fusion
     const allFiles = [...directFiles, ...channelFiles];
-
     res.json({ files: allFiles });
+
   } catch (err) {
     console.error('Erreur getDocuments :', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -116,6 +129,31 @@ exports.getAllUsers = async (req, res) => {
     res.json({ users });
   } catch (err) {
     console.error('Erreur getAllUsers :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+// 🔄 Mettre à jour le statut (online, busy, offline)
+exports.updateStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { status },
+      { new: true }
+    ).select('-password');
+
+    // Émettre le statut mis à jour en temps réel
+    const io = req.app.get('io');
+    io.emit('user_status_updated', {
+      userId: user._id.toString(),
+      newStatus: status
+    });
+
+    res.json({ user });
+  } catch (err) {
+    console.error('Erreur updateStatus :', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };

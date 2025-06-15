@@ -7,14 +7,31 @@ import { AuthContext } from '../context/AuthContext';
 
 const SidebarMobile = () => {
   const navigation = useNavigation();
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
+
 
   return (
     <View style={styles.sidebar}>
       {/* Profil */}
-      <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.button}>
-        <Icon name="person-circle-outline" size={26} color="#fff" />
-      </TouchableOpacity>
+     <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.button}>
+       <View style={styles.iconWithStatus}>
+         <Icon name="person-circle-outline" size={26} color="#fff" />
+         <View
+           style={[
+             styles.statusDot,
+             {
+               backgroundColor:
+                 user?.status === 'online'
+                   ? 'green'
+                   : user?.status === 'busy'
+                   ? 'red'
+                   : 'gray',
+             },
+           ]}
+         />
+       </View>
+     </TouchableOpacity>
+
 
       {/* Dashboard */}
       <TouchableOpacity onPress={() => navigation.navigate('Dashboard')} style={styles.button}>
@@ -53,6 +70,21 @@ const styles = StyleSheet.create({
   },
   button: {
     marginVertical: 15,
+  },
+  iconWithStatus: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
   },
 });
 

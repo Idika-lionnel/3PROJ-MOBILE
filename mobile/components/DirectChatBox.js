@@ -23,6 +23,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { ThemeContext } from '../context/ThemeContext';
+import AvatarWithStatus from './AvatarWithStatus';
 
 const emojiOptions = ['❤️', '😂', '😮', '😢', '👍', '👎'];
 
@@ -68,7 +69,10 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
         (msg.senderId === receiver._id && msg.receiverId === currentUserId) ||
         (msg.receiverId === receiver._id && msg.senderId === currentUserId);
 
-      const alreadyExists = log.some((m) => m._id && msg._id && m._id === msg._id);
+      const alreadyExists = log.some((m) =>
+        (m._id && msg._id && m._id === msg._id) ||
+        (m.tempId && msg.tempId && m.tempId === msg.tempId)
+      );
       if (isForThisChat && !alreadyExists) {
         setLog((prev) => [...prev, msg]);
 
@@ -117,6 +121,16 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       socket.off('reaction_removed', handleReactionRemove);
     };
   }, [receiver, currentUserId, log]);
+  useEffect(() => {
+    const handleStatusUpdate = ({ userId, newStatus }) => {
+      if (receiver && receiver._id === userId) {
+        receiver.status = newStatus;
+      }
+    };
+
+    socket.on('user_status_updated', handleStatusUpdate);
+    return () => socket.off('user_status_updated', handleStatusUpdate);
+  }, [receiver]);
 
   const sendMessage = () => {
     if (!message.trim() || !currentUserId || !receiver?._id) return;
@@ -150,7 +164,9 @@ const DirectChatBox = ({ receiver, contacts, currentUserId: propUserId }) => {
       const result = await axios.post(`${API_URL}/api/messages/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      socket.emit('direct_message', result.data);
+      const tempId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const finalMsg = { ...result.data, tempId };
+      socket.emit('direct_message', finalMsg);
     } catch (err) {
       console.error('Erreur envoi fichier :', err.response?.data || err.message);
     }
@@ -332,9 +348,25 @@ const styles = createStyles(dark);
         keyboardVerticalOffset={90}
       >
         <View style={styles.headerRow}>
-          <Text style={styles.channelTitle}>
-            {receiver?.prenom} {receiver?.nom}
-          </Text>
+          <View style={styles.nameWithStatus}>
+            <Text style={styles.channelTitle}>
+              {receiver?.prenom} {receiver?.nom}
+            </Text>
+            <View
+              style={[
+                styles.statusDot,
+                {
+                  backgroundColor:
+                    receiver?.status === 'online'
+                      ? 'green'
+                      : receiver?.status === 'busy'
+                      ? 'orange'
+                      : 'gray',
+                },
+              ]}
+            />
+          </View>
+
 
           {searchVisible && (
             <TextInput
@@ -355,7 +387,9 @@ const styles = createStyles(dark);
           ref={flatRef}
           data={filteredMessages}
           renderItem={renderItem}
-          keyExtractor={(item, i) => item._id?.toString() || i.toString()}
+          keyExtractor={(item, index) =>
+  item._id?.toString() || item.tempId || `msg-${index}`
+}
           onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
           style={{ flex: 1 }}
         />
@@ -401,6 +435,19 @@ const createStyles = (dark) => StyleSheet.create({
       paddingBottom: 4,  // Réduit
       marginTop: -4,     // Ajouté pour coller à l'entête
   },
+    nameWithStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    statusDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      borderWidth: 1.5,
+      borderColor: '#fff',
+      marginLeft: 6,
+    },
   searchInput: {
     flex: 1,
     backgroundColor: '#f1f1f1',
