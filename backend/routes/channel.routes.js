@@ -238,13 +238,15 @@ router.post(
   }
 );
 
-// ✅ Récupérer un canal par son ID
-// ✅ Récupérer un canal par son ID
+
+//  Récupérer un canal par son ID
+// ✅ Récupérer un canal par son ID (corrigé)
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const channel = await Channel.findById(req.params.id)
       .populate('members', 'prenom nom email')
-      .populate('createdBy', '_id prenom nom email');
+      .populate('createdBy', '_id prenom nom email')
+      .populate('workspace'); // ✅ on ne tente plus de populate `workspace.channels`
 
     if (!channel) {
       return res.status(404).json({ error: 'Canal introuvable' });
@@ -261,22 +263,27 @@ router.get('/:id', requireAuth, async (req, res) => {
       const memberId = member._id ? member._id.toString() : member.toString();
       return memberId === userId;
     });
-
     const isCreator = channel.createdBy?._id?.toString() === userId;
 
     if (!isWorkspaceMember) {
       return res.status(403).json({ error: 'Accès interdit (non membre du workspace)' });
     }
 
-
     if (channel.isPrivate && !isChannelMember && !isCreator) {
       return res.status(403).json({ error: 'Accès interdit (canal privé)' });
     }
+
+    // ✅ On récupère manuellement tous les canaux du workspace pour le hashtag
+    const workspaceChannels = await Channel.find({ workspace: channel.workspace._id }).select('_id name');
 
     res.status(200).json({
       ...channel.toObject(),
       isMember: isChannelMember || isCreator,
       isCreator: isCreator,
+      workspace: {
+        ...channel.workspace.toObject(),
+        channels: workspaceChannels, // ✅ ajouté dynamiquement ici
+      }
     });
   } catch (err) {
     console.error('❌ ERREUR RÉCUPÉRATION CANAL PAR ID :', err);

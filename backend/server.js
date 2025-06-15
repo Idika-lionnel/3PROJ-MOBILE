@@ -17,7 +17,7 @@ const messageRoutes = require('./routes/message.routes');
 const ChannelMessage = require('./models/ChannelMessage');
 const workspaceRoutes = require('./routes/workspace.routes');
 const channelRoutes = require('./routes/channel.routes');
-
+const mentionRoutes = require('./routes/mention.routes');
 // 🚀 App init
 const app = express();
 
@@ -46,6 +46,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/channels', channelRoutes);
+app.use('/api/mentions', require('./routes/mention.routes'));
 
 // 🛢️ MongoDB
 mongoose

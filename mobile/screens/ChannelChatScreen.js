@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '../components/channelChatStyles';
 import { useNavigation } from '@react-navigation/native';
 import  socket  from '../socket'
+import { formatContent } from '../utils/formatContent';
 
 
 
@@ -26,6 +27,9 @@ const ChannelChatScreen = () => {
   const navigation = useNavigation();
   const styles = createStyles(dark);
   const flatListRef = useRef();
+  const [knownMentions, setKnownMentions] = useState(new Set());
+  const [channelMap, setChannelMap] = useState({});
+
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -58,10 +62,39 @@ const ChannelChatScreen = () => {
         const res = await axios.get(`${API_URL}/api/channels/${channelId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setChannelName(res.data.name || '(canal)');
-        setIsCreator(res.data.isCreator || false); // <-- ajouter ceci
+        setIsCreator(res.data.isCreator || false);
         setIsMember(res.data.isMember || false);
         setChannel(res.data);
+
+        // ✅ Construction dynamique du channelMap (hashtag #channel)
+        if (res.data.workspace?.channels?.length > 0) {
+          const map = {};
+          res.data.workspace.channels.forEach(ch => {
+            if (ch?.name && ch?._id) {
+              map[ch.name.toLowerCase()] = ch._id;
+            }
+          });
+          setChannelMap(map);
+        }
+
+        // ✅ Génération dynamique du Set de mentions connues
+        const mentionsSet = new Set();
+
+        if (res.data.members && Array.isArray(res.data.members)) {
+          res.data.members.forEach(member => {
+            const prenom = member?.prenom?.toLowerCase();
+            const nom = member?.nom?.toLowerCase();
+
+            if (prenom && nom) {
+              mentionsSet.add(`@${prenom} ${nom}`);
+              mentionsSet.add(`@${prenom}.${nom}`);
+            }
+          });
+        }
+
+        setKnownMentions(mentionsSet); // à déclarer dans ton useState()
       } catch (err) {
         console.error('Erreur chargement canal :', err.response?.data || err.message);
       }
@@ -242,7 +275,7 @@ const ChannelChatScreen = () => {
 
           {item.content && (
             <TouchableOpacity onLongPress={() => setShowReactionsFor(item._id)}>
-              <Text style={messageTextStyle}>{item.content}</Text>
+              {formatContent(item.content, channelMap, channel?.workspace?._id, navigation, knownMentions)}
             </TouchableOpacity>
           )}
 
