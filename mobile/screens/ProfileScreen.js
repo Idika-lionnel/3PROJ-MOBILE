@@ -38,12 +38,14 @@ const ProfileScreen = () => {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const res = await axios.put(
-        `${API_URL}/users/update`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      updateUser(res.data); // met à jour le contexte
+      const dataToSend = { ...formData };
+      if (!dataToSend.password) delete dataToSend.password;
+
+      const res = await axios.put(`${API_URL}/users/update`, dataToSend, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      updateUser(res.data); // Mise à jour immédiate de l'interface
       alert('Profil mis à jour avec succès');
     } catch (err) {
       alert("Erreur lors de la mise à jour du profil");

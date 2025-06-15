@@ -32,6 +32,9 @@ export const AuthProvider = ({ children }) => {
 
     loadToken();
   }, []);
+  const updateUser = (newData) => {
+    setUser(prev => ({ ...prev, ...newData }));
+  };
 
   const login = async (newToken) => {
     try {
@@ -57,7 +60,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, loading }}>
+    <AuthContext.Provider value={{ token, user, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,6 +13,22 @@ const MyMentionsScreen = () => {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
+  // Fonction pour extraire toutes les mentions d’un message
+  function extractMentionsFromContent(content = '') {
+    const mentionRegex = /@([\wÀ-ÿ]+)[\s.]+([\wÀ-ÿ]+)/g;
+    const mentions = new Set();
+    let match;
+
+    while ((match = mentionRegex.exec(content)) !== null) {
+      const full1 = `@${match[1]} ${match[2]}`.toLowerCase();
+      const full2 = `@${match[1]}.${match[2]}`.toLowerCase();
+      mentions.add(full1);
+      mentions.add(full2);
+    }
+
+    return mentions;
+  }
+
   useEffect(() => {
     const fetchMentions = async () => {
       try {
@@ -34,7 +50,6 @@ const MyMentionsScreen = () => {
     (m.content || '').toLowerCase().includes(search.toLowerCase())
   );
 
-
   const handleRedirect = (mention) => {
     const { workspaceId, channelId, messageId } = mention;
     if (!workspaceId || !channelId || !messageId) {
@@ -49,23 +64,26 @@ const MyMentionsScreen = () => {
     });
   };
 
+  const renderMention = ({ item }) => {
+    const knownMentions = extractMentionsFromContent(item.content);
 
-  const renderMention = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handleRedirect(item)}>
-      <Text style={styles.channelName}>
-        📢 Canal : {item.channelName || 'Inconnu'}
-      </Text>
-     <Text style={styles.timestamp}>
-       {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Date inconnue'}
-     </Text>
-<View style={styles.content}>
-  {item.workspaceId
-    ? formatContent(item.content, {}, item.workspaceId, navigation, new Set([item.content.toLowerCase().split('@')[1]])) // temporaire
-    : <Text>{item.content}</Text>
-  }
-</View>
-    </TouchableOpacity>
-  );
+    return (
+      <TouchableOpacity style={styles.card} onPress={() => handleRedirect(item)}>
+        <Text style={styles.channelName}>
+          📢 Canal : {item.channelName || 'Inconnu'}
+        </Text>
+        <Text style={styles.timestamp}>
+          {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Date inconnue'}
+        </Text>
+        <View style={styles.content}>
+          {item.workspaceId
+            ? formatContent(item.content, {}, item.workspaceId, navigation, knownMentions)
+            : <Text>{item.content}</Text>
+          }
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>

@@ -40,21 +40,44 @@ exports.getDocuments = async (req, res) => {
 };
 
 // ✏️ Modifier le profil utilisateur
+const bcrypt = require('bcrypt');
+
 exports.updateProfile = async (req, res) => {
   try {
-    const { prenom, nom } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { prenom, nom },
-      { new: true }
-    ).select('-password');
-    res.json({ user });
+    const { prenom, nom, email, password } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+
+    if (prenom) user.prenom = prenom;
+    if (nom) user.nom = nom;
+
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists && emailExists._id.toString() !== user._id.toString()) {
+        return res.status(400).json({ error: 'Email déjà utilisé' });
+      }
+      user.email = email;
+    }
+
+    if (password && password.trim() !== '') {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+    }
+
+    await user.save();
+
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+
+    res.json(updatedUser);
   } catch (err) {
     console.error('Erreur updateProfile :', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
-
 // ❌ Supprimer le compte utilisateur
 exports.deleteAccount = async (req, res) => {
   try {
